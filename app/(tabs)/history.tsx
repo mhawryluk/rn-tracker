@@ -2,7 +2,7 @@ import { FlatList, StyleSheet } from "react-native";
 
 import { Text, View } from "@/components/Themed";
 import { useContext } from "react";
-import { TrackerContext } from "../_layout";
+import { TrackerContext } from "../../components/trackerContext";
 
 export default function HistoryTab() {
   const [trackerState, _] = useContext(TrackerContext);
@@ -25,7 +25,7 @@ export default function HistoryTab() {
                 ...styles.title,
                 padding: 20,
                 width: "100%",
-                backgroundColor: "#1D72F0",
+                backgroundColor: "#a0cfd5",
                 textAlign: "center",
                 borderRadius: 100,
                 marginVertical: 10,

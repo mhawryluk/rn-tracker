@@ -1,8 +1,8 @@
-import { Pressable, StyleSheet, useColorScheme } from "react-native";
+import { Pressable, StyleSheet, useColorScheme, Text } from "react-native";
 
 import { View } from "@/components/Themed";
 import { useContext } from "react";
-import { TrackerContext } from "../_layout";
+import { TrackerContext } from "../../components/trackerContext";
 import Colors from "../../constants/Colors";
 import { FontAwesome } from "@expo/vector-icons";
 import TilesViz from "@/components/gpu-viz/TilesViz";
@@ -27,7 +27,6 @@ function TrackerInputPanel() {
           size={50}
           color={Colors[colorScheme ?? "light"].button}
           style={{
-            opacity: 0.4,
             verticalAlign: "middle",
             textAlign: "center",
             alignItems: "center",
@@ -36,22 +35,24 @@ function TrackerInputPanel() {
 
         <View style={styles.row}>
           <Pressable
+            style={styles.buttonContainer}
             onPress={() =>
               setTrackerState((list) => [
                 ...list.splice(0, list.length - 1),
-                list[list.length - 1] - 1,
+                Math.max(0, list[list.length - 1] - 1),
               ])
             }
           >
             {({ pressed }) => (
               <FontAwesome
                 name="minus"
-                style={{ ...styles.button, opacity: pressed ? 0.2 : 0.8 }}
+                style={{ ...styles.button, opacity: pressed ? 0.2 : 1 }}
               />
             )}
           </Pressable>
 
           <Pressable
+            style={styles.buttonContainer}
             onPress={() =>
               setTrackerState((list) => [
                 ...list.splice(0, list.length - 1),
@@ -62,7 +63,7 @@ function TrackerInputPanel() {
             {({ pressed }) => (
               <FontAwesome
                 name="plus"
-                style={{ ...styles.button, opacity: pressed ? 0.2 : 0.8 }}
+                style={{ ...styles.button, opacity: pressed ? 0.2 : 1 }}
               />
             )}
           </Pressable>
@@ -73,9 +74,13 @@ function TrackerInputPanel() {
 }
 
 export default function TrackerScreen() {
+  const [trackerState] = useContext(TrackerContext);
   return (
     <View style={styles.container}>
       <TrackerVizPanel />
+      <Text style={styles.boldText}>
+        Today's count: {trackerState[trackerState.length - 1]}
+      </Text>
       <TrackerInputPanel />
     </View>
   );
@@ -116,11 +121,23 @@ const styles = StyleSheet.create({
     color: "white",
   },
 
+  buttonContainer: {
+    aspectRatio: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
   row: {
     flexDirection: "row",
     alignContent: "center",
     justifyContent: "center",
     gap: 20,
     backgroundColor: "inherit",
+  },
+
+  boldText: {
+    fontWeight: "bold",
+    fontSize: 20,
+    color: Colors.light.tint,
   },
 });

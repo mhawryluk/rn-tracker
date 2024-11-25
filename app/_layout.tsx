@@ -1,21 +1,16 @@
-import FontAwesome from "@expo/vector-icons/FontAwesome";
 import {
   DarkTheme,
   DefaultTheme,
   ThemeProvider,
 } from "@react-navigation/native";
-import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import { Dispatch, useEffect, useState } from "react";
-import React, { createContext, type SetStateAction } from "react";
+import { useState } from "react";
+import React from "react";
 import "react-native-reanimated";
 
-export const TrackerContext = createContext<
-  [number[], Dispatch<SetStateAction<number[]>>]
->([[], () => {}]);
-
 import { useColorScheme } from "@/components/useColorScheme";
+import { TrackerContext } from "@/components/trackerContext";
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -31,34 +26,13 @@ export const unstable_settings = {
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
-  const [loaded, error] = useFonts({
-    SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
-    ...FontAwesome.font,
-  });
-
-  // Expo Router uses Error Boundaries to catch errors in the navigation tree.
-  useEffect(() => {
-    if (error) throw error;
-  }, [error]);
-
-  useEffect(() => {
-    if (loaded) {
-      SplashScreen.hideAsync();
-    }
-  }, [loaded]);
-
-  if (!loaded) {
-    return null;
-  }
-
-  return <RootLayoutNav />;
-}
-
-function RootLayoutNav() {
+  const today = new Date(Date.now());
   const colorScheme = useColorScheme();
-  const [trackerState, setTrackerState] = useState<number[]>([
-    3, 2, 8, 0, 7, 0,
-  ]);
+  const [trackerState, setTrackerState] = useState<number[]>(
+    Array(today.getDate())
+      .fill(0)
+      .map(() => Math.round(Math.random() * 10))
+  );
 
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
