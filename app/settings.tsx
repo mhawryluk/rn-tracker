@@ -41,6 +41,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: "bold",
+    color: "white",
   },
 
   separator: {
@@ -62,5 +63,6 @@ const styles = StyleSheet.create({
   numberInput: {
     fontSize: 20,
     fontWeight: "bold",
+    color: "white",
   },
 });

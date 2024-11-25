@@ -4,9 +4,11 @@ import { Text, View } from "@/components/Themed";
 import { useContext } from "react";
 import { TrackerContext } from "../../components/context/TrackerContext";
 import Colors from "@/constants/Colors";
+import { GoalContext } from "@/components/context/GoalContext";
 
 export default function HistoryTab() {
-  const [trackerState, _] = useContext(TrackerContext);
+  const [trackerState] = useContext(TrackerContext);
+  const [goalState] = useContext(GoalContext);
 
   return (
     <View style={styles.container}>
@@ -26,11 +28,14 @@ export default function HistoryTab() {
                 ...styles.title,
                 padding: 20,
                 width: "100%",
-                backgroundColor: Colors.light.tint,
+                backgroundColor:
+                  value.item < goalState
+                    ? Colors.light.tint
+                    : Colors.light.lightTint,
                 textAlign: "center",
                 borderRadius: 100,
                 marginVertical: 10,
-                opacity: value.item / 20 + 0.5,
+                opacity: (value.item / goalState) * 0.5 + 0.5,
               }}
             >
               {date.getDate()}/{date.getMonth()}/{date.getFullYear()}:{" "}
