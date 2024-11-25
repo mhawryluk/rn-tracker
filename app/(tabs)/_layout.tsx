@@ -23,7 +23,7 @@ function SettingsModalLink({ colorScheme }: { colorScheme: ColorSchemeName }) {
           <FontAwesome
             name="gear"
             size={25}
-            color={Colors[colorScheme ?? "light"].text}
+            color={Colors[colorScheme ?? "light"].tint}
             style={{ marginRight: 15, opacity: pressed ? 0.5 : 1 }}
           />
         )}
@@ -38,6 +38,12 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
+        tabBarStyle: {
+          backgroundColor: Colors[colorScheme ?? "light"].background,
+        },
+        headerStyle: {
+          backgroundColor: Colors[colorScheme ?? "light"].background,
+        },
         tabBarActiveTintColor: Colors[colorScheme ?? "light"].tint,
         // Disable the static render of the header on web
         // to prevent a hydration error in React Navigation v6.

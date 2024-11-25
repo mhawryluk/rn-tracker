@@ -1,7 +1,7 @@
 import { PixelRatio } from "react-native";
 
 import { useContext, useEffect, useState } from "react";
-import { arrayOf, i32, struct, u32 } from "typegpu/data";
+import { arrayOf, I32, i32, struct, TgpuArray, U32, u32 } from "typegpu/data";
 import { Canvas, useGPUContext } from "react-native-wgpu";
 
 import tgpu, {
@@ -9,8 +9,9 @@ import tgpu, {
   type TgpuBindGroup,
   type TgpuBuffer,
 } from "typegpu";
-import { TrackerContext } from "../trackerContext";
+import { TrackerContext } from "../context/TrackerContext";
 import { useRoot } from "../gpu/utils";
+import { GoalContext } from "../context/GoalContext";
 
 const Span = struct({
   x: u32,
@@ -20,6 +21,7 @@ const Span = struct({
 const bindGroupLayout = tgpu.bindGroupLayout({
   span: { uniform: Span },
   values: { storage: (n: number) => arrayOf(i32, n) },
+  limit: { uniform: u32 },
 });
 
 export const vertWGSL = `
@@ -60,6 +62,7 @@ export const fragWGSL = `
   
   @group(0) @binding(0) var<uniform> span: Span;
   @group(0) @binding(1) var<storage> values: array<i32>;
+  @group(0) @binding(2) var<uniform> limit: u32;
   
   @fragment
   fn main(
@@ -73,21 +76,23 @@ export const fragWGSL = `
       return vec4f();
     }
 
-    let opacity = (f32(value)/f32(span.x * span.y)*0.5) + 0.8;
+    let opacity = (f32(value)/f32(limit)) * 0.2 + 0.8;
 
-    return vec4f(0.63, 0.81, 0.84, opacity);
+    return vec4f(0.76, 0.65, 0.58, opacity);
   }`;
 
 interface RenderingState {
   pipeline: GPURenderPipeline;
   spanBuffer: TgpuBuffer<typeof Span>;
-  valuesBuffer: TgpuBuffer<AnyTgpuData>;
+  valuesBuffer: TgpuBuffer<TgpuArray<I32>>;
+  limitBuffer: TgpuBuffer<U32>;
   bindGroup: TgpuBindGroup<(typeof bindGroupLayout)["entries"]>;
 }
 
 export default function TilesViz() {
-  const [trackerState, _] = useContext(TrackerContext);
-  const today = new Date(Date.now());
+  const [trackerState] = useContext(TrackerContext);
+  const [goalState] = useContext(GoalContext);
+
   const valuesState = [
     ...new Array(4).fill(-1),
     ...trackerState,
@@ -127,6 +132,8 @@ export default function TilesViz() {
       .createBuffer(arrayOf(i32, valuesState.length), valuesState)
       .$usage("storage");
 
+    const limitBuffer = root.createBuffer(u32, goalState).$usage("uniform");
+
     const pipeline = device.createRenderPipeline({
       layout: device.createPipelineLayout({
         bindGroupLayouts: [root.unwrap(bindGroupLayout)],
@@ -150,9 +157,10 @@ export default function TilesViz() {
     const bindGroup = bindGroupLayout.populate({
       span: spanBuffer,
       values: valuesBuffer,
+      limit: limitBuffer,
     });
 
-    setState({ bindGroup, pipeline, spanBuffer, valuesBuffer });
+    setState({ bindGroup, pipeline, spanBuffer, valuesBuffer, limitBuffer });
   }, [context, device, root, presentationFormat, state]);
 
   useEffect(() => {
@@ -160,7 +168,8 @@ export default function TilesViz() {
       return;
     }
 
-    const { bindGroup, pipeline, spanBuffer, valuesBuffer } = state;
+    const { bindGroup, pipeline, spanBuffer, valuesBuffer, limitBuffer } =
+      state;
     const textureView = context.getCurrentTexture().createView();
     const renderPassDescriptor: GPURenderPassDescriptor = {
       colorAttachments: [
@@ -178,6 +187,7 @@ export default function TilesViz() {
       y: spanY,
     });
     valuesBuffer.write(valuesState);
+    limitBuffer.write(goalState);
 
     const commandEncoder = device.createCommandEncoder();
     const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
@@ -188,7 +198,7 @@ export default function TilesViz() {
 
     device.queue.submit([commandEncoder.finish()]);
     context.present();
-  }, [context, device, root, spanX, spanY, state, valuesState]);
+  }, [context, device, root, spanX, spanY, state, valuesState, goalState]);
 
   return <Canvas ref={ref} style={{ height: "100%", aspectRatio: 1 }}></Canvas>;
 }

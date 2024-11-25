@@ -2,10 +2,11 @@ import { Pressable, StyleSheet, useColorScheme, Text } from "react-native";
 
 import { View } from "@/components/Themed";
 import { useContext } from "react";
-import { TrackerContext } from "../../components/trackerContext";
+import { TrackerContext } from "../../components/context/TrackerContext";
 import Colors from "../../constants/Colors";
 import { FontAwesome } from "@expo/vector-icons";
 import TilesViz from "@/components/gpu-viz/TilesViz";
+import { GoalContext } from "@/components/context/GoalContext";
 
 function TrackerVizPanel() {
   return (
@@ -23,7 +24,7 @@ function TrackerInputPanel() {
     <View style={styles.input}>
       <View style={{ ...styles.row, gap: 50 }}>
         <FontAwesome
-          name="coffee"
+          name="book"
           size={50}
           color={Colors[colorScheme ?? "light"].button}
           style={{
@@ -75,11 +76,13 @@ function TrackerInputPanel() {
 
 export default function TrackerScreen() {
   const [trackerState] = useContext(TrackerContext);
+  const [goalState] = useContext(GoalContext);
+
   return (
     <View style={styles.container}>
       <TrackerVizPanel />
       <Text style={styles.boldText}>
-        Today's count: {trackerState[trackerState.length - 1]}
+        Today's count: {trackerState[trackerState.length - 1]}/{goalState}
       </Text>
       <TrackerInputPanel />
     </View>
