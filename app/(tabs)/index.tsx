@@ -1,4 +1,11 @@
-import { Pressable, StyleSheet, useColorScheme, Text } from "react-native";
+import {
+  Pressable,
+  StyleSheet,
+  useColorScheme,
+  Text,
+  ScrollView,
+  Dimensions,
+} from "react-native";
 
 import { View } from "@/components/Themed";
 import { useContext } from "react";
@@ -7,11 +14,29 @@ import Colors from "../../constants/Colors";
 import { FontAwesome } from "@expo/vector-icons";
 import TilesViz from "@/components/gpu-viz/TilesViz";
 import { GoalContext } from "@/components/context/GoalContext";
+import BoxesViz from "@/components/gpu-viz/BoxesViz";
 
 function TrackerVizPanel() {
   return (
     <View style={styles.viz}>
-      <TilesViz />
+      <ScrollView
+        horizontal
+        pagingEnabled
+        persistentScrollbar
+        showsHorizontalScrollIndicator
+        scrollEnabled
+      >
+        <View>
+          <Text style={{ ...styles.boldText, paddingLeft: 20 }}>Today</Text>
+          <BoxesViz />
+        </View>
+        <View>
+          <Text style={{ ...styles.boldText, paddingLeft: 20 }}>
+            This month
+          </Text>
+          <TilesViz />
+        </View>
+      </ScrollView>
     </View>
   );
 }
@@ -108,11 +133,10 @@ const styles = StyleSheet.create({
   },
 
   viz: {
-    width: "100%",
+    width: Dimensions.get("window").width - 20,
     aspectRatio: 1,
     justifyContent: "center",
     alignItems: "center",
-    borderRadius: 20,
     overflow: "hidden",
   },
 

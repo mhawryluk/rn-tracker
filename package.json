@@ -32,7 +32,7 @@
     "react-native-screens": "~4.1.0",
     "react-native-web": "~0.19.13",
     "react-native-wgpu": "^0.1.20",
-    "typegpu": "^0.2.0"
+    "typegpu": "https://pkg.csb.dev/software-mansion/TypeGPU/commit/f8a20941/typegpu"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

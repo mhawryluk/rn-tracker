@@ -7,7 +7,6 @@ import Colors from "@/constants/Colors";
 import { useColorScheme } from "@/components/useColorScheme";
 import { useClientOnlyValue } from "@/components/useClientOnlyValue";
 
-// You can explore the built-in icon families and icons on the web at https://icons.expo.fyi/
 function TabBarIcon(props: {
   name: React.ComponentProps<typeof FontAwesome>["name"];
   color: string;
@@ -57,6 +56,7 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => (
             <TabBarIcon name="sticky-note" color={color} />
           ),
+          headerTintColor: Colors[colorScheme ?? "light"].tint,
           headerRight: () => <SettingsModalLink colorScheme={colorScheme} />,
         }}
       />
@@ -67,6 +67,7 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => (
             <TabBarIcon name="clock-o" color={color} />
           ),
+          headerTintColor: Colors[colorScheme ?? "light"].tint,
           headerRight: () => <SettingsModalLink colorScheme={colorScheme} />,
         }}
       />

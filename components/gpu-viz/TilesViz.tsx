@@ -4,11 +4,7 @@ import { useContext, useEffect, useState } from "react";
 import { arrayOf, I32, i32, struct, TgpuArray, U32, u32 } from "typegpu/data";
 import { Canvas, useGPUContext } from "react-native-wgpu";
 
-import tgpu, {
-  AnyTgpuData,
-  type TgpuBindGroup,
-  type TgpuBuffer,
-} from "typegpu";
+import tgpu, { type TgpuBindGroup, type TgpuBuffer } from "typegpu";
 import { TrackerContext } from "../context/TrackerContext";
 import { useRoot } from "../gpu/utils";
 import { GoalContext } from "../context/GoalContext";
@@ -76,9 +72,13 @@ export const fragWGSL = `
       return vec4f();
     }
 
-    let opacity = (f32(value)/f32(limit)) * 0.2 + 0.8;
+    if value < i32(limit) {
+      let opacity = (f32(value)/f32(limit)) * 0.2 + 0.8;
+      return vec4f(0.76, 0.65, 0.58, opacity);
+    }
 
-    return vec4f(0.76, 0.65, 0.58, opacity);
+    let opacity = (f32(value)/f32(2*limit)) * 0.2 + 0.8;
+    return vec4f(0.604, 0.694, 0.608, opacity);
   }`;
 
 interface RenderingState {
@@ -200,5 +200,14 @@ export default function TilesViz() {
     context.present();
   }, [context, device, root, spanX, spanY, state, valuesState, goalState]);
 
-  return <Canvas ref={ref} style={{ height: "100%", aspectRatio: 1 }}></Canvas>;
+  return (
+    <Canvas
+      ref={ref}
+      style={{
+        height: "100%",
+        aspectRatio: 1,
+        padding: 20,
+      }}
+    />
+  );
 }
