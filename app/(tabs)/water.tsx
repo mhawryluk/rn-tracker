@@ -3,7 +3,6 @@ import {
   StyleSheet,
   useColorScheme,
   Text,
-  ScrollView,
   Dimensions,
 } from "react-native";
 
@@ -12,32 +11,14 @@ import { useContext } from "react";
 import { TrackerContext } from "../../components/context/TrackerContext";
 import Colors from "../../constants/Colors";
 import { FontAwesome } from "@expo/vector-icons";
-import TilesViz from "@/components/gpu-viz/TilesViz";
 import { GoalContext } from "@/components/context/GoalContext";
-import BoxesViz from "@/components/gpu-viz/BoxesViz";
 import ConfettiViz from "@/components/gpu-viz/ConfettiViz";
+import WaterViz from "@/components/gpu-viz/WaterViz";
 
 function TrackerVizPanel() {
   return (
-    <View style={styles.viz}>
-      <ScrollView
-        horizontal
-        pagingEnabled
-        persistentScrollbar
-        showsHorizontalScrollIndicator
-        scrollEnabled
-      >
-        <View>
-          <Text style={{ ...styles.boldText, paddingLeft: 20 }}>Today</Text>
-          <BoxesViz />
-        </View>
-        <View>
-          <Text style={{ ...styles.boldText, paddingLeft: 20 }}>
-            This month
-          </Text>
-          <TilesViz />
-        </View>
-      </ScrollView>
+    <View style={{ ...styles.viz, width: "80%" }}>
+      <WaterViz />
     </View>
   );
 }
@@ -50,7 +31,7 @@ function TrackerInputPanel() {
     <View style={styles.input}>
       <View style={{ ...styles.row, gap: 50 }}>
         <FontAwesome
-          name="book"
+          name="glass"
           size={50}
           color={Colors[colorScheme ?? "light"].button}
           style={{
@@ -140,6 +121,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     overflow: "hidden",
+    gap: 50,
   },
 
   button: {

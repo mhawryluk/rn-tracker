@@ -377,7 +377,7 @@ export default function BoxesViz() {
         Array.from({ length: Y }, (_, j) =>
           Array.from({ length: Z }, (_, k) => {
             const index = k * X * Y + (Y - j - 1) * X + i;
-            if (index > trackerState[trackerState.length - 1]) {
+            if (index + 1 > trackerState[trackerState.length - 1]) {
               return {
                 isActive: 0,
                 albedo: vec4f(),

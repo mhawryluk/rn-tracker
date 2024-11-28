@@ -61,6 +61,15 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="water"
+        options={{
+          title: "Water",
+          tabBarIcon: ({ color }) => <TabBarIcon name="glass" color={color} />,
+          headerTintColor: Colors[colorScheme ?? "light"].tint,
+          headerRight: () => <SettingsModalLink colorScheme={colorScheme} />,
+        }}
+      />
+      <Tabs.Screen
         name="history"
         options={{
           title: "History",
