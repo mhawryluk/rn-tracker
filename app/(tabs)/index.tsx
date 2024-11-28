@@ -15,6 +15,7 @@ import { FontAwesome } from "@expo/vector-icons";
 import TilesViz from "@/components/gpu-viz/TilesViz";
 import { GoalContext } from "@/components/context/GoalContext";
 import BoxesViz from "@/components/gpu-viz/BoxesViz";
+import ConfettiViz from "@/components/gpu-viz/ConfettiViz";
 
 function TrackerVizPanel() {
   return (
@@ -105,6 +106,7 @@ export default function TrackerScreen() {
 
   return (
     <View style={styles.container}>
+      <ConfettiViz shown={trackerState[trackerState.length - 1] >= goalState} />
       <TrackerVizPanel />
       <Text style={styles.boldText}>
         Today's count: {trackerState[trackerState.length - 1]}/{goalState}

@@ -57,7 +57,7 @@ export default function BoxesViz() {
   const boxCenter = std.mul(0.5, cubeSize);
   const upAxis = vec3f(0, 1, 0);
 
-  const rotationSpeed = 1;
+  const rotationSpeed = 0;
   const cameraDistance = 100;
 
   const [boxMatrixBuffer, setMatrixBuffer] = useState<
