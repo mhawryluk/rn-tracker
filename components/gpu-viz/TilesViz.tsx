@@ -111,7 +111,7 @@ export default function TilesViz() {
     "values"
   );
 
-  const limitBuffer = root.createBuffer(u32, goalState).$usage("uniform");
+  const limitBuffer = useBuffer(u32, goalState, ["uniform"]);
 
   const pipeline = root.device.createRenderPipeline({
     layout: root.device.createPipelineLayout({
@@ -160,8 +160,6 @@ export default function TilesViz() {
       x: spanX,
       y: spanY,
     });
-    valuesBuffer.write(valuesState);
-    limitBuffer.write(goalState);
 
     const commandEncoder = root.device.createCommandEncoder();
     const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
