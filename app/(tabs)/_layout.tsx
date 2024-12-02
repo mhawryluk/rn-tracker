@@ -6,6 +6,7 @@ import { ColorSchemeName, Pressable } from "react-native";
 import Colors from "@/constants/Colors";
 import { useColorScheme } from "@/components/useColorScheme";
 import { useClientOnlyValue } from "@/components/useClientOnlyValue";
+import { enableFreeze } from "react-native-screens";
 
 function TabBarIcon(props: {
   name: React.ComponentProps<typeof FontAwesome>["name"];
@@ -13,6 +14,8 @@ function TabBarIcon(props: {
 }) {
   return <FontAwesome size={28} style={{ marginBottom: -3 }} {...props} />;
 }
+
+enableFreeze();
 
 function SettingsModalLink({ colorScheme }: { colorScheme: ColorSchemeName }) {
   return (
@@ -52,6 +55,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
+          freezeOnBlur: true,
           title: "Tracker",
           tabBarIcon: ({ color }) => (
             <TabBarIcon name="sticky-note" color={color} />
@@ -64,6 +68,7 @@ export default function TabLayout() {
         name="water"
         options={{
           title: "Water",
+          freezeOnBlur: true,
           tabBarIcon: ({ color }) => <TabBarIcon name="glass" color={color} />,
           headerTintColor: Colors[colorScheme ?? "light"].tint,
           headerRight: () => <SettingsModalLink colorScheme={colorScheme} />,
@@ -73,6 +78,7 @@ export default function TabLayout() {
         name="history"
         options={{
           title: "History",
+          freezeOnBlur: true,
           tabBarIcon: ({ color }) => (
             <TabBarIcon name="clock-o" color={color} />
           ),

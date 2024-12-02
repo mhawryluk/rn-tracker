@@ -1,6 +1,6 @@
 import { PixelRatio } from "react-native";
 
-import { useContext, useEffect, useState } from "react";
+import { Suspense, useContext, useEffect, useState } from "react";
 import { arrayOf, I32, i32, struct, TgpuArray, U32, u32 } from "typegpu/data";
 import { Canvas, useGPUContext } from "react-native-wgpu";
 
@@ -89,25 +89,25 @@ interface RenderingState {
   bindGroup: TgpuBindGroup<(typeof bindGroupLayout)["entries"]>;
 }
 
+const spanX = 7;
+const spanY = 6;
+
 export default function TilesViz() {
   const [trackerState] = useContext(TrackerContext);
   const [goalState] = useContext(GoalContext);
 
   const valuesState = [
-    ...new Array(4).fill(-1),
+    ...new Array(6).fill(-1),
     ...trackerState,
-    ...new Array(30 - trackerState.length).fill(-2),
-    ...new Array(1).fill(-1),
+    ...new Array(31 - trackerState.length).fill(-2),
+    ...new Array(5).fill(-1),
   ];
-
-  const spanX = 7;
-  const spanY = 5;
 
   const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
   const root = useRoot();
 
   const [state, setState] = useState<null | RenderingState>(null);
-  const { device = null } = root ?? {};
+  const { device } = root ?? {};
   const { ref, context } = useGPUContext();
 
   useEffect(() => {
@@ -201,13 +201,15 @@ export default function TilesViz() {
   }, [context, device, root, spanX, spanY, state, valuesState, goalState]);
 
   return (
-    <Canvas
-      ref={ref}
-      style={{
-        height: "100%",
-        aspectRatio: 1,
-        padding: 20,
-      }}
-    />
+    <Suspense fallback={"loading..."}>
+      <Canvas
+        ref={ref}
+        style={{
+          height: "100%",
+          aspectRatio: 1,
+          padding: 20,
+        }}
+      />
+    </Suspense>
   );
 }

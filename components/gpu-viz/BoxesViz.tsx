@@ -1,16 +1,35 @@
-import { PixelRatio } from "react-native";
-
-import { useContext, useEffect, useState } from "react";
+import React, { useContext, useMemo, useRef } from "react";
 import { Canvas, useGPUContext } from "react-native-wgpu";
+import tgpu, { builtin, std } from "typegpu/experimental";
 
-import { TrackerContext } from "../context/TrackerContext";
-import { useRoot } from "../gpu/utils";
 import { arrayOf, bool, f32, struct, u32, vec3f, vec4f } from "typegpu/data";
-import { std, TgpuBuffer, Storage } from "typegpu";
-import tgpu, { builtin } from "typegpu/experimental";
 import { GoalContext } from "../context/GoalContext";
+import { TrackerContext } from "../context/TrackerContext";
+import {
+  useBuffer,
+  useBufferState,
+  useFrame,
+  useGPUSetup,
+  useRoot,
+} from "../gpu/utils";
 
-// structs
+// #region constants
+
+const [X, Y, Z] = [3, 3, 3];
+const MAX_BOX_SIZE = 15;
+const BIG_BOX_BOUNDS = vec3f(
+  X * MAX_BOX_SIZE,
+  Y * MAX_BOX_SIZE,
+  Z * MAX_BOX_SIZE
+);
+const ROTATION_SPEED = 0.7;
+const CAMERA_DISTANCE = 100;
+const BOX_CENTER = std.mul(0.5, BIG_BOX_BOUNDS);
+const UP_AXIS = vec3f(0, 1, 0);
+
+// #endregion
+
+// #region data structures
 
 const BoxStruct = struct({
   isActive: u32,
@@ -35,104 +54,16 @@ const CameraAxesStruct = struct({
 });
 
 const CanvasDimsStruct = struct({ width: u32, height: u32 });
-
-const X = 3;
-const Y = 3;
-const Z = 3;
-
 const BoxMatrixData = arrayOf(arrayOf(arrayOf(BoxStruct, Z), Y), X);
 
-export default function BoxesViz() {
-  const [trackerState] = useContext(TrackerContext);
-  const [goalState] = useContext(GoalContext);
+// #endregion
 
-  const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
-  const root = useRoot();
+// #region functions
 
-  const { device = null } = root ?? {};
-  const { ref, context } = useGPUContext();
-
-  const MAX_BOX_SIZE = 15;
-  const cubeSize = vec3f(X * MAX_BOX_SIZE, Y * MAX_BOX_SIZE, Z * MAX_BOX_SIZE);
-  const boxCenter = std.mul(0.5, cubeSize);
-  const upAxis = vec3f(0, 1, 0);
-
-  const rotationSpeed = 0;
-  const cameraDistance = 100;
-
-  const [boxMatrixBuffer, setMatrixBuffer] = useState<
-    (TgpuBuffer<typeof BoxMatrixData> & Storage) | null
-  >(null);
-
-  useEffect(() => {
-    if (!context || !root || !context.canvas) {
-      return;
-    }
-
-    const canvas = context.canvas as HTMLCanvasElement;
-    canvas.width = canvas.clientWidth * PixelRatio.get();
-    canvas.height = canvas.clientHeight * PixelRatio.get();
-
-    context.configure({
-      device: root.device,
-      format: presentationFormat,
-      alphaMode: "premultiplied",
-    });
-
-    let frame = 0;
-
-    // buffers
-    const boxMatrixBuffer = root
-      .createBuffer(arrayOf(arrayOf(arrayOf(BoxStruct, Z), Y), X))
-      .$name("box_array")
-      .$usage("storage");
-
-    setMatrixBuffer(boxMatrixBuffer);
-
-    const cameraPositionBuffer = root
-      .createBuffer(vec3f)
-      .$name("camera_position")
-      .$usage("storage");
-
-    const cameraAxesBuffer = root
-      .createBuffer(CameraAxesStruct)
-      .$name("camera_axes")
-      .$usage("storage");
-
-    const canvasDimsBuffer = root
-      .createBuffer(CanvasDimsStruct)
-      .$name("canvas_dims")
-      .$usage("uniform");
-
-    const boxSizeBuffer = root
-      .createBuffer(u32, MAX_BOX_SIZE)
-      .$name("box_size")
-      .$usage("uniform");
-
-    // bind groups and layouts
-
-    const renderBindGroupLayout = tgpu.bindGroupLayout({
-      boxMatrix: { storage: boxMatrixBuffer!.dataType },
-      cameraPosition: { storage: cameraPositionBuffer.dataType },
-      cameraAxes: { storage: cameraAxesBuffer.dataType },
-      canvasDims: { uniform: canvasDimsBuffer.dataType },
-      boxSize: { uniform: boxSizeBuffer.dataType },
-    });
-
-    const renderBindGroup = renderBindGroupLayout.populate({
-      boxMatrix: boxMatrixBuffer,
-      cameraPosition: cameraPositionBuffer,
-      cameraAxes: cameraAxesBuffer,
-      canvasDims: canvasDimsBuffer,
-      boxSize: boxSizeBuffer,
-    });
-
-    // functions
-
-    const getBoxIntersection = tgpu
-      .fn([vec3f, vec3f, RayStruct], IntersectionStruct)
-      .does(
-        /* wgsl */ `(
+const getBoxIntersection = tgpu
+  .fn([vec3f, vec3f, RayStruct], IntersectionStruct)
+  .does(
+    /* wgsl */ `(
   boundMin: vec3f,
   boundMax: vec3f,
   ray: RayStruct
@@ -199,17 +130,14 @@ export default function BoxesViz() {
   output.tMax = tMax;
   return output;
 }`
-      )
-      .$uses({ RayStruct, IntersectionStruct })
-      .$name("box_intersection");
+  )
+  .$uses({ RayStruct, IntersectionStruct })
+  .$name("box_intersection");
 
-    const vertexFunction = tgpu
-      .vertexFn(
-        { vertexIndex: builtin.vertexIndex },
-        { outPos: builtin.position }
-      )
-      .does(
-        /* wgsl */ `(@builtin(vertex_index) vertexIndex: u32) -> VertexOutput {
+const vertexFunction = tgpu
+  .vertexFn({ vertexIndex: builtin.vertexIndex }, { outPos: builtin.position })
+  .does(
+    /* wgsl */ `(@builtin(vertex_index) vertexIndex: u32) -> VertexOutput {
   var pos = array<vec2f, 6>(
     vec2<f32>( 1,  1),
     vec2<f32>( 1, -1),
@@ -223,18 +151,18 @@ export default function BoxesViz() {
   output.outPos = vec4f(pos[vertexIndex], 0, 1);
   return output;
 }`
-      )
-      .$name("vertex_main")
-      .$uses({
-        get VertexOutput() {
-          return vertexFunction.Output;
-        },
-      });
+  )
+  .$name("vertex_main")
+  .$uses({
+    get VertexOutput() {
+      return vertexFunction.Output;
+    },
+  });
 
-    const fragmentFunction = tgpu
-      .fragmentFn({ outPos: builtin.position }, vec4f)
-      .does(
-        /* wgsl */ `(@builtin(position) position: vec4f) -> @location(0) vec4f {
+const fragmentFunction = tgpu
+  .fragmentFn({ outPos: builtin.position }, vec4f)
+  .does(
+    /* wgsl */ `(@builtin(position) position: vec4f) -> @location(0) vec4f {
   let minDim = f32(min(canvasDims.width, canvasDims.height));
 
   var ray: RayStruct;
@@ -247,14 +175,14 @@ export default function BoxesViz() {
   let bigBoxIntersection = getBoxIntersection(
     -vec3f(f32(boxSize))/2,
     vec3f(
-      cubeSize.x,
-      cubeSize.y,
-      cubeSize.z,
+      BIG_BOX_BOUNDS.x,
+      BIG_BOX_BOUNDS.y,
+      BIG_BOX_BOUNDS.z,
     ) + vec3f(f32(boxSize))/2,
     ray,
   );
 
-  var color = vec4f(0);
+  var color = vec4f();
 
   if bigBoxIntersection.intersects {
     var tMin: f32;
@@ -285,94 +213,25 @@ export default function BoxesViz() {
 
   return color;
 }`
-      )
-      .$uses({
-        ...renderBindGroupLayout.bound,
-        RayStruct,
-        getBoxIntersection,
-        X,
-        Y,
-        Z,
-        MAX_BOX_SIZE,
-        cubeSize,
-      })
-      .$name("fragment_main");
+  )
+  .$uses({
+    RayStruct,
+    getBoxIntersection,
+    X,
+    Y,
+    Z,
+    MAX_BOX_SIZE,
+    BIG_BOX_BOUNDS,
+  })
+  .$name("fragment_main");
 
-    // pipeline
+// #endregion
 
-    const pipeline = root
-      .withVertex(vertexFunction, {})
-      .withFragment(fragmentFunction, {
-        format: presentationFormat,
-      })
-      .createPipeline()
-      .with(renderBindGroupLayout, renderBindGroup);
-
-    // UI
-
-    let disposed = false;
-
-    const onFrame = (loop: (deltaTime: number) => unknown) => {
-      let lastTime = Date.now();
-      const runner = () => {
-        if (disposed) {
-          return;
-        }
-        const now = Date.now();
-        const dt = now - lastTime;
-        lastTime = now;
-        loop(dt);
-        requestAnimationFrame(runner);
-      };
-      requestAnimationFrame(runner);
-    };
-
-    onFrame((deltaTime) => {
-      const width = canvas.width;
-      const height = canvas.height;
-
-      const cameraPosition = vec3f(
-        Math.cos(frame) * cameraDistance + boxCenter.x,
-        boxCenter.y,
-        Math.sin(frame) * cameraDistance + boxCenter.z
-      );
-
-      const cameraAxes = (() => {
-        const forwardAxis = std.normalize(std.sub(boxCenter, cameraPosition));
-        return {
-          forward: forwardAxis,
-          up: upAxis,
-          right: std.cross(upAxis, forwardAxis),
-        };
-      })();
-
-      cameraPositionBuffer.write(cameraPosition);
-      cameraAxesBuffer.write(cameraAxes);
-      canvasDimsBuffer.write({ width, height });
-
-      frame += (rotationSpeed * deltaTime) / 1000;
-
-      pipeline
-        .withColorAttachment({
-          view: context.getCurrentTexture().createView(),
-          clearValue: [1, 1, 1, 1],
-          loadOp: "clear" as const,
-          storeOp: "store" as const,
-        })
-        .draw(6);
-
-      root.flush();
-      context.present();
-    });
-
-    return () => {
-      disposed = true;
-      root.destroy();
-    };
-  }, [context, device, root]);
-
-  useEffect(() => {
-    boxMatrixBuffer?.write(
+export default function BoxesViz() {
+  const [goalState] = useContext(GoalContext);
+  const [trackerState] = useContext(TrackerContext);
+  const boxMatrixState = useMemo(
+    () =>
       Array.from({ length: X }, (_, i) =>
         Array.from({ length: Y }, (_, j) =>
           Array.from({ length: Z }, (_, k) => {
@@ -390,15 +249,160 @@ export default function BoxesViz() {
             return {
               isActive: 1,
               albedo:
-                index < goalState
+                index + 1 < goalState
                   ? vec4f(0.76, 0.65, 0.58, opacity)
                   : vec4f(0.604, 0.694, 0.608, opacity),
             };
           })
         )
-      )
-    );
-  }, [trackerState, boxMatrixBuffer, goalState]);
+      ),
+    [trackerState]
+  );
 
-  return <Canvas ref={ref} style={{ height: "100%", aspectRatio: 1 }}></Canvas>;
+  const root = useRoot();
+  const { ref, context } = useGPUContext();
+
+  const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
+  useGPUSetup(context, root?.device, presentationFormat);
+
+  // buffers
+
+  const boxMatrixBuffer = useBuffer(
+    root,
+    BoxMatrixData,
+    boxMatrixState,
+    "storage",
+    "box_array"
+  );
+
+  const [cameraPositionBuffer, [cameraPosition, setCameraPosition]] =
+    useBufferState(root, vec3f, undefined, "storage", "camera_position");
+
+  const [cameraAxesBuffer, [cameraAxes, setCameraAxes]] = useBufferState(
+    root,
+    CameraAxesStruct,
+    undefined,
+    "storage",
+    "camera_axes"
+  );
+
+  const [canvasDimsBuffer, [canvasDims, setCanvasDims]] = useBufferState(
+    root,
+    CanvasDimsStruct,
+    undefined,
+    "uniform",
+    "canvas_dims"
+  );
+
+  const boxSizeBuffer = useBuffer(
+    root,
+    u32,
+    MAX_BOX_SIZE,
+    "uniform",
+    "box_size"
+  );
+
+  // bind groups and layouts
+
+  const [renderBindGroupLayout, renderBindGroup] = useMemo(() => {
+    if (
+      !boxMatrixBuffer ||
+      !cameraPositionBuffer ||
+      !cameraAxesBuffer ||
+      !canvasDimsBuffer ||
+      !boxSizeBuffer
+    ) {
+      return [];
+    }
+
+    const layout = tgpu.bindGroupLayout({
+      boxMatrix: { storage: boxMatrixBuffer.dataType },
+      cameraPosition: { storage: cameraPositionBuffer.dataType },
+      cameraAxes: { storage: cameraAxesBuffer.dataType },
+      canvasDims: { uniform: canvasDimsBuffer.dataType },
+      boxSize: { uniform: boxSizeBuffer.dataType },
+    });
+
+    const group = layout.populate({
+      boxMatrix: boxMatrixBuffer,
+      cameraPosition: cameraPositionBuffer,
+      cameraAxes: cameraAxesBuffer,
+      canvasDims: canvasDimsBuffer,
+      boxSize: boxSizeBuffer,
+    });
+
+    return [layout, group];
+  }, [
+    boxMatrixBuffer,
+    cameraPositionBuffer,
+    cameraAxesBuffer,
+    canvasDimsBuffer,
+    boxSizeBuffer,
+  ]);
+
+  const pipeline = useMemo(() => {
+    if (!root || !renderBindGroupLayout || !renderBindGroup) {
+      return;
+    }
+
+    return root
+      .withVertex(vertexFunction, {})
+      .withFragment(
+        fragmentFunction.$uses({
+          ...renderBindGroupLayout.bound,
+        }),
+        { format: presentationFormat }
+      )
+      .createPipeline()
+      .with(renderBindGroupLayout, renderBindGroup);
+  }, [root, renderBindGroupLayout, renderBindGroup]);
+
+  const frame = useRef(0);
+
+  useFrame((deltaTime: number) => {
+    if (!root || !context || !pipeline) {
+      return;
+    }
+
+    setCanvasDims({
+      width: context.canvas.width,
+      height: context.canvas.height,
+    });
+
+    const cameraPos = vec3f(
+      Math.cos(frame.current) * CAMERA_DISTANCE + BOX_CENTER.x,
+      BOX_CENTER.y,
+      Math.sin(frame.current) * CAMERA_DISTANCE + BOX_CENTER.z
+    );
+
+    setCameraPosition(cameraPos);
+    setCameraAxes(() => {
+      const forwardAxis = std.normalize(std.sub(BOX_CENTER, cameraPos));
+      return {
+        forward: forwardAxis,
+        up: UP_AXIS,
+        right: std.cross(UP_AXIS, forwardAxis),
+      };
+    });
+
+    frame.current += (ROTATION_SPEED * deltaTime) / 1000;
+
+    pipeline
+      .withColorAttachment({
+        view: context.getCurrentTexture().createView(),
+        clearValue: [1, 1, 1, 0],
+        loadOp: "clear",
+        storeOp: "store",
+      })
+      .draw(6);
+
+    root.flush();
+    context.present();
+  });
+
+  return (
+    <>
+      <Canvas ref={ref} style={{ height: "100%", aspectRatio: 1 }} />
+    </>
+  );
 }

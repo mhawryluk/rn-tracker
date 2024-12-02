@@ -750,6 +750,7 @@ export default function WaterViz() {
     }
 
     let disposed = false;
+    let frameId = 0;
 
     const onFrame = (loop: (deltaTime: number) => unknown) => {
       let lastTime = Date.now();
@@ -761,12 +762,13 @@ export default function WaterViz() {
         const dt = now - lastTime;
         lastTime = now;
         loop(dt);
-        requestAnimationFrame(runner);
+        frameId = requestAnimationFrame(runner);
       };
-      requestAnimationFrame(runner);
+      frameId = requestAnimationFrame(runner);
     };
 
     onFrame((deltaTime) => {
+      console.log("water frame");
       msSinceLastTick += deltaTime;
 
       if (msSinceLastTick >= timestep) {
@@ -781,6 +783,8 @@ export default function WaterViz() {
     });
 
     return () => {
+      console.log("disposed");
+      cancelAnimationFrame(frameId);
       disposed = true;
       root.destroy();
     };
