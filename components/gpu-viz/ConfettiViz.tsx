@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import { Canvas, useGPUContext } from "react-native-wgpu";
 
 import { arrayOf, f32, struct, vec2f, vec4f } from "typegpu/data";
@@ -104,13 +104,13 @@ const mainFrag = tgpu.fragmentFn(VertexOutput, vec4f).does(/* wgsl */ `
 const mainCompute = tgpu.computeFn([builtin.globalInvocationId], {
   workgroupSize: [1],
 }).does(/* wgsl */ `(@builtin(global_invocation_id) gid: vec3u) {
-          let index = gid.x;
-          if index == 0 {
-            time += deltaTime;
-          }
-          let phase = (time + particleData[index].seed) / 200; 
-          particleData[index].position += particleData[index].velocity * deltaTime / 20 + vec2f(sin(phase) / 600, cos(phase) / 500);
-        }`);
+  let index = gid.x;
+  if index == 0 {
+    time += deltaTime;
+  }
+  let phase = (time + particleData[index].seed) / 200; 
+  particleData[index].position += particleData[index].velocity * deltaTime / 20 + vec2f(sin(phase) / 600, cos(phase) / 500);
+}`);
 
 // #endregion
 
@@ -133,12 +133,11 @@ export default function ConfettiViz() {
   const { ref, context } = useGPUContext();
 
   const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
-  useGPUSetup(context, root, presentationFormat);
+  useGPUSetup(context, presentationFormat);
 
   // buffers
 
   const canvasAspectRatioBuffer = useBuffer(
-    root,
     f32,
     context ? context.canvas.width / context.canvas.height : 1,
     ["uniform"],
@@ -152,7 +151,6 @@ export default function ConfettiViz() {
   );
 
   const particleGeometryBuffer = useBuffer(
-    root,
     arrayOf(ParticleGeometry, PARTICLE_AMOUNT),
     Array(PARTICLE_AMOUNT)
       .fill(0)
@@ -166,21 +164,14 @@ export default function ConfettiViz() {
   );
 
   const particleDataBuffer = useBuffer(
-    root,
     arrayOf(ParticleData, PARTICLE_AMOUNT),
     undefined,
     ["storage", "uniform", "vertex"],
     "particle_data"
   );
 
-  const deltaTimeBuffer = useBuffer(
-    root,
-    f32,
-    undefined,
-    ["uniform"],
-    "delta_time"
-  );
-  const timeBuffer = useBuffer(root, f32, undefined, ["storage"], "time");
+  const deltaTimeBuffer = useBuffer(f32, undefined, ["uniform"], "delta_time");
+  const timeBuffer = useBuffer(f32, undefined, ["storage"], "time");
 
   const particleDataStorage = useMemo(
     () => (particleDataBuffer ? asMutable(particleDataBuffer) : undefined),
@@ -197,38 +188,36 @@ export default function ConfettiViz() {
 
   // pipelines
 
-  const renderPipeline = useMemo(() => {
-    if (!root || !particleGeometryBuffer || !particleDataBuffer) {
-      return;
-    }
-
-    return root
-      .withVertex(
-        mainVert.$uses({
-          canvasAspectRatio: canvasAspectRatioUniform,
-        }),
-        {
-          tilt: geometryLayout.attrib.tilt,
-          angle: geometryLayout.attrib.angle,
-          color: geometryLayout.attrib.color,
-          center: dataLayout.attrib.position,
-        }
-      )
-      .withFragment(mainFrag, {
-        format: presentationFormat,
-      })
-      .withPrimitive({
-        topology: "triangle-strip",
-      })
-      .createPipeline()
-      .with(geometryLayout, particleGeometryBuffer)
-      .with(dataLayout, particleDataBuffer);
-  }, [root, particleDataBuffer, particleDataBuffer]);
+  const renderPipeline = useMemo(
+    () =>
+      root
+        .withVertex(
+          mainVert.$uses({
+            canvasAspectRatio: canvasAspectRatioUniform,
+          }),
+          {
+            tilt: geometryLayout.attrib.tilt,
+            angle: geometryLayout.attrib.angle,
+            color: geometryLayout.attrib.color,
+            center: dataLayout.attrib.position,
+          }
+        )
+        .withFragment(mainFrag, {
+          format: presentationFormat,
+        })
+        .withPrimitive({
+          topology: "triangle-strip",
+        })
+        .createPipeline()
+        .with(geometryLayout, particleGeometryBuffer)
+        .with(dataLayout, particleDataBuffer),
+    []
+  );
 
   const computePipeline = useMemo(
     () =>
       root
-        ?.withCompute(
+        .withCompute(
           mainCompute.$uses({
             particleData: particleDataStorage,
             deltaTime: deltaTimeUniform,
@@ -236,12 +225,12 @@ export default function ConfettiViz() {
           })
         )
         .createPipeline(),
-    [root]
+    []
   );
 
   useEffect(() => {
     // randomize positions
-    particleDataBuffer?.write(
+    particleDataBuffer.write(
       Array(PARTICLE_AMOUNT)
         .fill(0)
         .map(() => ({
@@ -253,34 +242,37 @@ export default function ConfettiViz() {
           seed: Math.random(),
         }))
     );
-  }, [particleDataBuffer]);
+  }, []);
 
-  const frame = useMemo(() => {
-    return (deltaTime: number, dispose: () => void) => {
-      if (!root || !context || !renderPipeline) {
+  const frame = useCallback(
+    (deltaTime: number, dispose: () => void) => {
+      if (!context) {
         return;
       }
 
-      deltaTimeBuffer?.write(deltaTime);
-      canvasAspectRatioBuffer?.write(
+      deltaTimeBuffer.write(deltaTime);
+      canvasAspectRatioBuffer.write(
         context.canvas.width / context.canvas.height
       );
-      computePipeline?.dispatchWorkgroups(PARTICLE_AMOUNT);
+      computePipeline.dispatchWorkgroups(PARTICLE_AMOUNT);
 
-      particleDataBuffer?.read().then((data) => {
+      particleDataBuffer.read().then((data) => {
         if (
           data.every(
             (particle) =>
-              (particle.position.x < 0 || particle.position.x > 1) &&
-              (particle.position.y < 0 || particle.position.y > 1)
+              particle.position.x < -1 ||
+              particle.position.x > 1 ||
+              particle.position.y < -1.5
           )
         ) {
+          console.log("confetti animation ended");
           dispose();
         }
       });
 
+      // console.log("draw confetti");
       renderPipeline
-        ?.withColorAttachment({
+        .withColorAttachment({
           view: context.getCurrentTexture().createView(),
           clearValue: [0, 0, 0, 0],
           loadOp: "clear" as const,
@@ -290,8 +282,9 @@ export default function ConfettiViz() {
 
       root.flush();
       context.present();
-    };
-  }, [renderPipeline]);
+    },
+    [context]
+  );
 
   useFrame(frame);
 

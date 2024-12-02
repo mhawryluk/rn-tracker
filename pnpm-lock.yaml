@@ -66,8 +66,8 @@ importers:
         specifier: ^0.1.20
         version: 0.1.20(react-native@0.76.2(@babel/core@7.26.0)(@babel/preset-env@7.26.0(@babel/core@7.26.0))(@types/react@18.3.12)(react@18.3.1))(react@18.3.1)
       typegpu:
-        specifier: https://pkg.csb.dev/software-mansion/TypeGPU/commit/d3722d12/typegpu
-        version: https://pkg.csb.dev/software-mansion/TypeGPU/commit/d3722d12/typegpu
+        specifier: https://pkg.csb.dev/software-mansion/TypeGPU/commit/c243b1f4/typegpu
+        version: https://pkg.csb.dev/software-mansion/TypeGPU/commit/c243b1f4/typegpu
     devDependencies:
       '@babel/core':
         specifier: ^7.25.2
@@ -4175,8 +4175,8 @@ packages:
   typed-binary@4.2.0:
     resolution: {integrity: sha512-K8lXyQUAk095YkIkFqV929+epoQqxB0lsx9TBd1mb79565eVWXIRa7emCArRajH+g5nYa3t/ZoaSQIl0RDQMsQ==}
 
-  typegpu@https://pkg.csb.dev/software-mansion/TypeGPU/commit/d3722d12/typegpu:
-    resolution: {tarball: https://pkg.csb.dev/software-mansion/TypeGPU/commit/d3722d12/typegpu}
+  typegpu@https://pkg.csb.dev/software-mansion/TypeGPU/commit/c243b1f4/typegpu:
+    resolution: {tarball: https://pkg.csb.dev/software-mansion/TypeGPU/commit/c243b1f4/typegpu}
     version: 0.2.0
     engines: {node: '>=12.20.0'}
 
@@ -9640,7 +9640,7 @@ snapshots:
 
   typed-binary@4.2.0: {}
 
-  typegpu@https://pkg.csb.dev/software-mansion/TypeGPU/commit/d3722d12/typegpu:
+  typegpu@https://pkg.csb.dev/software-mansion/TypeGPU/commit/c243b1f4/typegpu:
     dependencies:
       tinyest: 0.0.0
       typed-binary: 4.2.0

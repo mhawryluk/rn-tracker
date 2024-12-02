@@ -1,26 +1,26 @@
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useContext, useEffect, useMemo, useRef } from "react";
 import { PixelRatio } from "react-native";
-import { RNCanvasContext, useDevice } from "react-native-wgpu";
-import tgpu, { AnyTgpuData } from "typegpu";
+import { RNCanvasContext } from "react-native-wgpu";
+
 import { Parsed } from "typegpu/data";
-import { ExperimentalTgpuRoot } from "typegpu/experimental";
+import { AnyTgpuData, ExperimentalTgpuRoot } from "typegpu/experimental";
+import { RootContext } from "../context/RootContext";
 
-export function useRoot() {
-  const { device } = useDevice();
-
-  return useMemo(
-    () => (device ? tgpu.initFromDevice({ device }) : null),
-    [device]
-  );
+export function useRoot(): ExperimentalTgpuRoot {
+  const root = useContext(RootContext);
+  if (root === null) {
+    throw new Error("please provide root");
+  }
+  return root;
 }
 
 export function useGPUSetup(
   context: RNCanvasContext | null,
-  root: ExperimentalTgpuRoot | null,
   presentationFormat: GPUTextureFormat
 ) {
+  const root = useRoot();
   useEffect(() => {
-    if (!context || !root) {
+    if (!context) {
       return;
     }
 
@@ -33,16 +33,16 @@ export function useGPUSetup(
       format: presentationFormat,
       alphaMode: "premultiplied",
     });
-  }, [context, root, presentationFormat]);
+  }, [context]);
 }
 
 export function useBuffer<T extends AnyTgpuData>(
-  root: ExperimentalTgpuRoot | null,
   schema: T,
   value: Parsed<T> | undefined,
   usage: ("uniform" | "storage" | "vertex")[],
   label?: string
 ) {
+  const root = useRoot();
   const buffer = useMemo(
     () => root?.createBuffer(schema).$usage(...usage).$name(label),
     [root]

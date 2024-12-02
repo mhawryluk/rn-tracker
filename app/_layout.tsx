@@ -5,14 +5,16 @@ import {
 } from "@react-navigation/native";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import { useState } from "react";
-import React from "react";
+import React, { useMemo, useState } from "react";
 import "react-native-reanimated";
 
-import { useColorScheme } from "@/components/useColorScheme";
-import { TrackerContext } from "@/components/context/TrackerContext";
 import { GoalContext } from "@/components/context/GoalContext";
+import { RootContext } from "@/components/context/RootContext";
+import { TrackerContext } from "@/components/context/TrackerContext";
+import { useColorScheme } from "@/components/useColorScheme";
 import Colors from "@/constants/Colors";
+import { useDevice } from "react-native-wgpu";
+import tgpu from "typegpu/experimental";
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -37,23 +39,35 @@ export default function RootLayout() {
   );
   const [goalState, setGoalState] = useState<number>(10);
 
+  const { device } = useDevice();
+  const root = useMemo(
+    () => (device ? tgpu.initFromDevice({ device }) : null),
+    [device]
+  );
+
+  if (root === null) {
+    return null;
+  }
+
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
       <TrackerContext.Provider value={[trackerState, setTrackerState]}>
         <GoalContext.Provider value={[goalState, setGoalState]}>
-          <Stack
-            screenOptions={{
-              headerStyle: {
-                backgroundColor: Colors[colorScheme ?? "light"].background,
-              },
-            }}
-          >
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen
-              name="settings"
-              options={{ presentation: "modal", title: "Settings" }}
-            />
-          </Stack>
+          <RootContext.Provider value={root}>
+            <Stack
+              screenOptions={{
+                headerStyle: {
+                  backgroundColor: Colors[colorScheme ?? "light"].background,
+                },
+              }}
+            >
+              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              <Stack.Screen
+                name="settings"
+                options={{ presentation: "modal", title: "Settings" }}
+              />
+            </Stack>
+          </RootContext.Provider>
         </GoalContext.Provider>
       </TrackerContext.Provider>
     </ThemeProvider>

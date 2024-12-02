@@ -1,4 +1,4 @@
-import React, { useContext, useMemo, useRef } from "react";
+import React, { useCallback, useContext, useMemo, useRef } from "react";
 import { Canvas, useGPUContext } from "react-native-wgpu";
 import tgpu, { builtin, std } from "typegpu/experimental";
 
@@ -257,12 +257,11 @@ export default function BoxesViz() {
   const { ref, context } = useGPUContext();
 
   const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
-  useGPUSetup(context, root, presentationFormat);
+  useGPUSetup(context, presentationFormat);
 
   // buffers
 
   const boxMatrixBuffer = useBuffer(
-    root,
     BoxMatrixData,
     boxMatrixState,
     ["storage"],
@@ -270,7 +269,6 @@ export default function BoxesViz() {
   );
 
   const cameraPositionBuffer = useBuffer(
-    root,
     vec3f,
     undefined,
     ["storage"],
@@ -278,7 +276,6 @@ export default function BoxesViz() {
   );
 
   const cameraAxesBuffer = useBuffer(
-    root,
     CameraAxesStruct,
     undefined,
     ["storage"],
@@ -286,34 +283,17 @@ export default function BoxesViz() {
   );
 
   const canvasDimsBuffer = useBuffer(
-    root,
     CanvasDimsStruct,
     undefined,
     ["uniform"],
     "canvas_dims"
   );
 
-  const boxSizeBuffer = useBuffer(
-    root,
-    u32,
-    MAX_BOX_SIZE,
-    ["uniform"],
-    "box_size"
-  );
+  const boxSizeBuffer = useBuffer(u32, MAX_BOX_SIZE, ["uniform"], "box_size");
 
   // bind groups and layouts
 
   const [renderBindGroupLayout, renderBindGroup] = useMemo(() => {
-    if (
-      !boxMatrixBuffer ||
-      !cameraPositionBuffer ||
-      !cameraAxesBuffer ||
-      !canvasDimsBuffer ||
-      !boxSizeBuffer
-    ) {
-      return [];
-    }
-
     const layout = tgpu.bindGroupLayout({
       boxMatrix: { storage: boxMatrixBuffer.dataType },
       cameraPosition: { storage: cameraPositionBuffer.dataType },
@@ -331,35 +311,27 @@ export default function BoxesViz() {
     });
 
     return [layout, group];
-  }, [
-    boxMatrixBuffer,
-    cameraPositionBuffer,
-    cameraAxesBuffer,
-    canvasDimsBuffer,
-    boxSizeBuffer,
-  ]);
+  }, []);
 
-  const pipeline = useMemo(() => {
-    if (!root || !renderBindGroupLayout || !renderBindGroup) {
-      return;
-    }
-
-    return root
-      .withVertex(vertexFunction, {})
-      .withFragment(
-        fragmentFunction.$uses({
-          ...renderBindGroupLayout.bound,
-        }),
-        { format: presentationFormat }
-      )
-      .createPipeline()
-      .with(renderBindGroupLayout, renderBindGroup);
-  }, [root, renderBindGroupLayout, renderBindGroup]);
+  const pipeline = useMemo(
+    () =>
+      root
+        .withVertex(vertexFunction, {})
+        .withFragment(
+          fragmentFunction.$uses({
+            ...renderBindGroupLayout.bound,
+          }),
+          { format: presentationFormat }
+        )
+        .createPipeline()
+        .with(renderBindGroupLayout, renderBindGroup),
+    []
+  );
 
   const frameNum = useRef(0);
-  const frame = useMemo(
-    () => (deltaTime: number) => {
-      if (!root || !context || !pipeline) {
+  const frame = useCallback(
+    (deltaTime: number) => {
+      if (!context || !pipeline) {
         return;
       }
 
@@ -384,6 +356,7 @@ export default function BoxesViz() {
 
       frameNum.current += (ROTATION_SPEED * deltaTime) / 1000;
 
+      // console.log("draw boxes");
       pipeline
         .withColorAttachment({
           view: context.getCurrentTexture().createView(),
@@ -396,7 +369,7 @@ export default function BoxesViz() {
       root.flush();
       context.present();
     },
-    [pipeline]
+    [context]
   );
 
   useFrame(frame);

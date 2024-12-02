@@ -10,7 +10,7 @@ import {
 import { GoalContext } from "@/components/context/GoalContext";
 import BoxesViz from "@/components/gpu-viz/BoxesViz";
 import ConfettiViz from "@/components/gpu-viz/ConfettiViz";
-import TilesViz from "@/components/gpu-viz/TilesViz";
+
 import { View } from "@/components/Themed";
 import { FontAwesome } from "@expo/vector-icons";
 import { useContext } from "react";
@@ -35,7 +35,7 @@ function TrackerVizPanel() {
           <Text style={{ ...styles.boldText, paddingLeft: 20 }}>
             This month
           </Text>
-          <TilesViz />
+          {/* <TilesViz /> */}
         </View>
       </ScrollView>
     </View>

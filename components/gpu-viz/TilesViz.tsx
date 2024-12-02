@@ -4,7 +4,10 @@ import { Suspense, useContext, useEffect, useState } from "react";
 import { arrayOf, I32, i32, struct, TgpuArray, U32, u32 } from "typegpu/data";
 import { Canvas, useGPUContext } from "react-native-wgpu";
 
-import tgpu, { type TgpuBindGroup, type TgpuBuffer } from "typegpu";
+import tgpu, {
+  type TgpuBindGroup,
+  type TgpuBuffer,
+} from "typegpu/experimental";
 import { TrackerContext } from "../context/TrackerContext";
 import { useRoot } from "../gpu/utils";
 import { GoalContext } from "../context/GoalContext";
@@ -201,15 +204,13 @@ export default function TilesViz() {
   }, [context, device, root, spanX, spanY, state, valuesState, goalState]);
 
   return (
-    <Suspense fallback={"loading..."}>
-      <Canvas
-        ref={ref}
-        style={{
-          height: "100%",
-          aspectRatio: 1,
-          padding: 20,
-        }}
-      />
-    </Suspense>
+    <Canvas
+      ref={ref}
+      style={{
+        height: "100%",
+        aspectRatio: 1,
+        padding: 20,
+      }}
+    />
   );
 }
