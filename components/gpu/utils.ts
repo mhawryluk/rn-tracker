@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { PixelRatio } from "react-native";
 import { RNCanvasContext, useDevice } from "react-native-wgpu";
 import tgpu, { AnyTgpuData } from "typegpu";
@@ -16,11 +16,11 @@ export function useRoot() {
 
 export function useGPUSetup(
   context: RNCanvasContext | null,
-  device: GPUDevice | undefined,
+  root: ExperimentalTgpuRoot | null,
   presentationFormat: GPUTextureFormat
 ) {
   useEffect(() => {
-    if (!context || !device) {
+    if (!context || !root) {
       return;
     }
 
@@ -29,22 +29,22 @@ export function useGPUSetup(
     canvas.height = canvas.clientHeight * PixelRatio.get();
 
     context.configure({
-      device: device,
+      device: root.device,
       format: presentationFormat,
       alphaMode: "premultiplied",
     });
-  }, [context, device, presentationFormat]);
+  }, [context, root, presentationFormat]);
 }
 
 export function useBuffer<T extends AnyTgpuData>(
   root: ExperimentalTgpuRoot | null,
   schema: T,
   value: Parsed<T> | undefined,
-  usage: "uniform" | "storage" | "vertex",
+  usage: ("uniform" | "storage" | "vertex")[],
   label?: string
 ) {
   const buffer = useMemo(
-    () => root?.createBuffer(schema).$usage(usage).$name(label),
+    () => root?.createBuffer(schema).$usage(...usage).$name(label),
     [root]
   );
 
@@ -57,50 +57,28 @@ export function useBuffer<T extends AnyTgpuData>(
   return buffer;
 }
 
-export function useBufferState<T extends AnyTgpuData>(
-  root: ExperimentalTgpuRoot | null,
-  schema: T,
-  initialValue: Parsed<T> | undefined,
-  usage: "uniform" | "storage" | "vertex",
-  label?: string
-) {
-  const [value, setValue] = useState(initialValue);
-
-  const buffer = useMemo(
-    () => root?.createBuffer(schema).$usage(usage).$name(label),
-    [root]
-  );
-
-  useEffect(() => {
-    if (value !== undefined && buffer && !buffer.destroyed) {
-      buffer.write(value);
-    }
-  }, [buffer, value]);
-
-  return [buffer, [value, setValue]] as const;
-}
-
-export function useFrame(loop: (deltaTime: number) => unknown) {
+export function useFrame(loop: (deltaTime: number, dispose: () => void) => unknown) {
   const frame = useRef<number | undefined>();
-
-  useEffect(() => {
+  const dispose = useCallback(() => {
+    console.log("disposing animation")
     if (frame.current !== undefined) {
       cancelAnimationFrame(frame.current);
     }
+  }, []);
+
+  useEffect(() => {
+    dispose();
+
     let lastTime = Date.now();
     const runner = () => {
       const now = Date.now();
       const dt = now - lastTime;
       lastTime = now;
-      loop(dt);
+      loop(dt, dispose);
       frame.current = requestAnimationFrame(runner);
     };
     frame.current = requestAnimationFrame(runner);
-  }, [loop]);
 
-  return () => {
-    if (frame.current !== undefined) {
-      cancelAnimationFrame(frame.current);
-    }
-  };
+    return dispose
+  }, [loop]);
 }

@@ -5,13 +5,7 @@ import tgpu, { builtin, std } from "typegpu/experimental";
 import { arrayOf, bool, f32, struct, u32, vec3f, vec4f } from "typegpu/data";
 import { GoalContext } from "../context/GoalContext";
 import { TrackerContext } from "../context/TrackerContext";
-import {
-  useBuffer,
-  useBufferState,
-  useFrame,
-  useGPUSetup,
-  useRoot,
-} from "../gpu/utils";
+import { useBuffer, useFrame, useGPUSetup, useRoot } from "../gpu/utils";
 
 // #region constants
 
@@ -263,7 +257,7 @@ export default function BoxesViz() {
   const { ref, context } = useGPUContext();
 
   const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
-  useGPUSetup(context, root?.device, presentationFormat);
+  useGPUSetup(context, root, presentationFormat);
 
   // buffers
 
@@ -271,26 +265,31 @@ export default function BoxesViz() {
     root,
     BoxMatrixData,
     boxMatrixState,
-    "storage",
+    ["storage"],
     "box_array"
   );
 
-  const [cameraPositionBuffer, [cameraPosition, setCameraPosition]] =
-    useBufferState(root, vec3f, undefined, "storage", "camera_position");
+  const cameraPositionBuffer = useBuffer(
+    root,
+    vec3f,
+    undefined,
+    ["storage"],
+    "camera_position"
+  );
 
-  const [cameraAxesBuffer, [cameraAxes, setCameraAxes]] = useBufferState(
+  const cameraAxesBuffer = useBuffer(
     root,
     CameraAxesStruct,
     undefined,
-    "storage",
+    ["storage"],
     "camera_axes"
   );
 
-  const [canvasDimsBuffer, [canvasDims, setCanvasDims]] = useBufferState(
+  const canvasDimsBuffer = useBuffer(
     root,
     CanvasDimsStruct,
     undefined,
-    "uniform",
+    ["uniform"],
     "canvas_dims"
   );
 
@@ -298,7 +297,7 @@ export default function BoxesViz() {
     root,
     u32,
     MAX_BOX_SIZE,
-    "uniform",
+    ["uniform"],
     "box_size"
   );
 
@@ -357,48 +356,50 @@ export default function BoxesViz() {
       .with(renderBindGroupLayout, renderBindGroup);
   }, [root, renderBindGroupLayout, renderBindGroup]);
 
-  const frame = useRef(0);
+  const frameNum = useRef(0);
+  const frame = useMemo(
+    () => (deltaTime: number) => {
+      if (!root || !context || !pipeline) {
+        return;
+      }
 
-  useFrame((deltaTime: number) => {
-    if (!root || !context || !pipeline) {
-      return;
-    }
+      canvasDimsBuffer?.write({
+        width: context.canvas.width,
+        height: context.canvas.height,
+      });
 
-    setCanvasDims({
-      width: context.canvas.width,
-      height: context.canvas.height,
-    });
+      const cameraPos = vec3f(
+        Math.cos(frameNum.current) * CAMERA_DISTANCE + BOX_CENTER.x,
+        BOX_CENTER.y,
+        Math.sin(frameNum.current) * CAMERA_DISTANCE + BOX_CENTER.z
+      );
+      cameraPositionBuffer?.write(cameraPos);
 
-    const cameraPos = vec3f(
-      Math.cos(frame.current) * CAMERA_DISTANCE + BOX_CENTER.x,
-      BOX_CENTER.y,
-      Math.sin(frame.current) * CAMERA_DISTANCE + BOX_CENTER.z
-    );
-
-    setCameraPosition(cameraPos);
-    setCameraAxes(() => {
       const forwardAxis = std.normalize(std.sub(BOX_CENTER, cameraPos));
-      return {
+      cameraAxesBuffer?.write({
         forward: forwardAxis,
         up: UP_AXIS,
         right: std.cross(UP_AXIS, forwardAxis),
-      };
-    });
+      });
 
-    frame.current += (ROTATION_SPEED * deltaTime) / 1000;
+      frameNum.current += (ROTATION_SPEED * deltaTime) / 1000;
 
-    pipeline
-      .withColorAttachment({
-        view: context.getCurrentTexture().createView(),
-        clearValue: [1, 1, 1, 0],
-        loadOp: "clear",
-        storeOp: "store",
-      })
-      .draw(6);
+      pipeline
+        .withColorAttachment({
+          view: context.getCurrentTexture().createView(),
+          clearValue: [1, 1, 1, 0],
+          loadOp: "clear",
+          storeOp: "store",
+        })
+        .draw(6);
 
-    root.flush();
-    context.present();
-  });
+      root.flush();
+      context.present();
+    },
+    [pipeline]
+  );
+
+  useFrame(frame);
 
   return (
     <>

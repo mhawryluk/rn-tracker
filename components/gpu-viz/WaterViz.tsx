@@ -3,9 +3,7 @@ import { PixelRatio } from "react-native";
 import { useContext, useEffect } from "react";
 import { Canvas, useGPUContext } from "react-native-wgpu";
 
-import { useRoot } from "../gpu/utils";
 import {
-  type Parsed,
   arrayOf,
   bool,
   f32,
@@ -15,18 +13,20 @@ import {
   vec2f,
   vec2u,
   vec4f,
+  type Parsed,
 } from "typegpu/data";
 import tgpu, {
   asMutable,
   asReadonly,
   asUniform,
   builtin,
-  wgsl,
   std,
-  type TgpuBufferReadonly,
+  wgsl,
   type TgpuBufferMutable,
+  type TgpuBufferReadonly,
 } from "typegpu/experimental";
 import { TrackerContext } from "../context/TrackerContext";
+import { useRoot } from "../gpu/utils";
 
 let sourceIntensity = 0;
 

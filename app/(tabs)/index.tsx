@@ -1,21 +1,21 @@
 import {
-  Pressable,
-  StyleSheet,
-  useColorScheme,
-  Text,
-  ScrollView,
   Dimensions,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  useColorScheme,
 } from "react-native";
 
-import { View } from "@/components/Themed";
-import { useContext } from "react";
-import { TrackerContext } from "../../components/context/TrackerContext";
-import Colors from "../../constants/Colors";
-import { FontAwesome } from "@expo/vector-icons";
-import TilesViz from "@/components/gpu-viz/TilesViz";
 import { GoalContext } from "@/components/context/GoalContext";
 import BoxesViz from "@/components/gpu-viz/BoxesViz";
 import ConfettiViz from "@/components/gpu-viz/ConfettiViz";
+import TilesViz from "@/components/gpu-viz/TilesViz";
+import { View } from "@/components/Themed";
+import { FontAwesome } from "@expo/vector-icons";
+import { useContext } from "react";
+import { TrackerContext } from "../../components/context/TrackerContext";
+import Colors from "../../constants/Colors";
 
 function TrackerVizPanel() {
   return (
@@ -106,7 +106,9 @@ export default function TrackerScreen() {
 
   return (
     <View style={styles.container}>
-      <ConfettiViz shown={trackerState[trackerState.length - 1] >= goalState} />
+      {trackerState[trackerState.length - 1] >= goalState ? (
+        <ConfettiViz />
+      ) : null}
       <TrackerVizPanel />
       <Text style={styles.boldText}>
         Today's count: {trackerState[trackerState.length - 1]}/{goalState}
