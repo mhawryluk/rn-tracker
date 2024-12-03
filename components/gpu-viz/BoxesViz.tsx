@@ -250,7 +250,7 @@ export default function BoxesViz() {
           })
         )
       ),
-    [trackerState]
+    [trackerState, goalState]
   );
 
   const root = useRoot();
@@ -356,7 +356,6 @@ export default function BoxesViz() {
 
       frameNum.current += (ROTATION_SPEED * deltaTime) / 1000;
 
-      // console.log("draw boxes");
       pipeline
         .withColorAttachment({
           view: context.getCurrentTexture().createView(),

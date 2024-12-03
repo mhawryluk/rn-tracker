@@ -1,34 +1,25 @@
 import { useContext, useEffect } from "react";
 import { Canvas, useGPUContext } from "react-native-wgpu";
-import { arrayOf, i32, struct, u32 } from "typegpu/data";
-
-import tgpu from "typegpu/experimental";
+import { arrayOf, i32, u32, vec2f, vec4f } from "typegpu/data";
+import tgpu, { asReadonly, asUniform, builtin } from "typegpu/experimental";
 
 import { GoalContext } from "../context/GoalContext";
 import { TrackerContext } from "../context/TrackerContext";
 import { useBuffer, useGPUSetup, useRoot } from "../gpu/utils";
 
-const Span = struct({
-  x: u32,
-  y: u32,
-});
+const SPAN_X = 7;
+const SPAN_Y = 6;
 
-const bindGroupLayout = tgpu.bindGroupLayout({
-  span: { uniform: Span },
-  values: { storage: (n: number) => arrayOf(i32, n) },
-  limit: { uniform: u32 },
-});
-
-export const vertWGSL = `
-  struct Output {
-    @builtin(position) pos: vec4f,
-    @location(0) uv: vec2f,
-  }
-  
-  @vertex
-  fn main(
-    @builtin(vertex_index) vertexIndex: u32,
-  ) -> Output {
+export const mainVert = tgpu
+  .vertexFn(
+    { vertexIndex: builtin.vertexIndex },
+    {
+      pos: builtin.position,
+      uv: vec2f,
+    }
+  )
+  .does(
+    `(@builtin(vertex_index) vertexIndex: u32) -> Output {
     var pos = array<vec2f, 4>(
       vec2(1, 1), // top-right
       vec2(-1, 1), // top-left
@@ -47,41 +38,39 @@ export const vertWGSL = `
     out.pos = vec4f(pos[vertexIndex], 0.0, 1.0);
     out.uv = uv[vertexIndex];
     return out;
-  }`;
+  }`
+  )
+  .$uses({
+    get Output() {
+      return mainVert.Output;
+    },
+  });
 
-export const fragWGSL = `
-  struct Span {
-    x: u32,
-    y: u32,
-  }
-  
-  @group(0) @binding(0) var<uniform> span: Span;
-  @group(0) @binding(1) var<storage> values: array<i32>;
-  @group(0) @binding(2) var<uniform> limit: u32;
-  
-  @fragment
-  fn main(
-    @location(0) uv: vec2f,
-  ) -> @location(0) vec4f {
+export const mainFrag = tgpu
+  .fragmentFn({ uv: vec2f, pos: builtin.position }, vec4f)
+  .does(
+    `(@location(0) uv: vec2f) -> @location(0) vec4f {
     let x = floor(uv.x * f32(span.x));
     let y = floor((1 - uv.y) * f32(span.y));
-    let value = values[u32(y*f32(span.x) + x)];
+    let value = values[u32(y * f32(span.x) + x)];
 
     if value == -1 {
       return vec4f();
     }
 
     if value < i32(limit) {
-      let opacity = (f32(value)/f32(limit)) * 0.2 + 0.8;
+      let opacity = (f32(value) / f32(limit)) * 0.2 + 0.8;
       return vec4f(0.76, 0.65, 0.58, opacity);
     }
 
     let opacity = (f32(value)/f32(2*limit)) * 0.2 + 0.8;
     return vec4f(0.604, 0.694, 0.608, opacity);
-  }`;
-
-const spanX = 7;
-const spanY = 6;
+  }`
+  )
+  .$uses({
+    "span.x": SPAN_X,
+    "span.y": SPAN_Y,
+  });
 
 export default function TilesViz() {
   const [goalState] = useContext(GoalContext);
@@ -100,10 +89,6 @@ export default function TilesViz() {
 
   useGPUSetup(context, presentationFormat);
 
-  const spanBuffer = root
-    .createBuffer(Span, { x: spanX, y: spanY })
-    .$usage("uniform");
-
   const valuesBuffer = useBuffer(
     arrayOf(i32, valuesState.length),
     valuesState,
@@ -113,62 +98,34 @@ export default function TilesViz() {
 
   const limitBuffer = useBuffer(u32, goalState, ["uniform"]);
 
-  const pipeline = root.device.createRenderPipeline({
-    layout: root.device.createPipelineLayout({
-      bindGroupLayouts: [root.unwrap(bindGroupLayout)],
-    }),
-    vertex: {
-      module: root.device.createShaderModule({ code: vertWGSL }),
-    },
-    fragment: {
-      module: root.device.createShaderModule({ code: fragWGSL }),
-      targets: [
-        {
-          format: presentationFormat,
-        },
-      ],
-    },
-    primitive: {
+  const pipeline = root
+    .withVertex(mainVert, {})
+    .withFragment(
+      mainFrag.$uses({
+        limit: asUniform(limitBuffer),
+        values: asReadonly(valuesBuffer),
+      }),
+      { format: presentationFormat }
+    )
+    .withPrimitive({
       topology: "triangle-strip",
-    },
-  });
-
-  const bindGroup = bindGroupLayout.populate({
-    span: spanBuffer,
-    values: valuesBuffer,
-    limit: limitBuffer,
-  });
+    })
+    .createPipeline();
 
   useEffect(() => {
     if (!context) {
       return;
     }
 
-    const textureView = context.getCurrentTexture().createView();
-    const renderPassDescriptor: GPURenderPassDescriptor = {
-      colorAttachments: [
-        {
-          view: textureView,
-          clearValue: [0, 0, 0, 0],
-          loadOp: "clear",
-          storeOp: "store",
-        },
-      ],
-    };
+    pipeline
+      .withColorAttachment({
+        view: context.getCurrentTexture().createView(),
+        clearValue: [0, 0, 0, 0],
+        loadOp: "clear",
+        storeOp: "store",
+      })
+      .draw(4);
 
-    spanBuffer.write({
-      x: spanX,
-      y: spanY,
-    });
-
-    const commandEncoder = root.device.createCommandEncoder();
-    const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
-    passEncoder.setPipeline(pipeline);
-    passEncoder.setBindGroup(0, root.unwrap(bindGroup));
-    passEncoder.draw(4);
-    passEncoder.end();
-
-    root.device.queue.submit([commandEncoder.finish()]);
     context.present();
   }, [context, valuesState, goalState]);
 

@@ -44,8 +44,8 @@ export function useBuffer<T extends AnyTgpuData>(
 ) {
   const root = useRoot();
   const buffer = useMemo(
-    () => root?.createBuffer(schema).$usage(...usage).$name(label),
-    [root]
+    () => root.createBuffer(schema).$usage(...usage).$name(label),
+    [root, schema, label, ...usage]
   );
 
   useEffect(() => {
