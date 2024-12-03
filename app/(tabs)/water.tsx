@@ -87,10 +87,12 @@ export default function TrackerScreen() {
   return (
     <View style={styles.container}>
       <TrackerVizPanel />
-      <Text style={styles.boldText}>
-        Today's count: {trackerState[trackerState.length - 1]}/{goalState}
-      </Text>
-      <TrackerInputPanel />
+      <View style={{ width: "100%", alignItems: "center", gap: 40 }}>
+        <Text style={styles.boldText}>
+          Today's count: {trackerState[trackerState.length - 1]}/{goalState}
+        </Text>
+        <TrackerInputPanel />
+      </View>
     </View>
   );
 }
@@ -99,8 +101,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     alignItems: "center",
-    justifyContent: "center",
+    justifyContent: "flex-end",
     padding: 20,
+    paddingTop: 0,
     gap: 50,
   },
 

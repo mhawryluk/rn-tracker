@@ -8,14 +8,13 @@ import {
 } from "react-native";
 
 import { GoalContext } from "@/components/context/GoalContext";
+import { TrackerContext } from "@/components/context/TrackerContext";
 import BoxesViz from "@/components/gpu-viz/BoxesViz";
 import ConfettiViz from "@/components/gpu-viz/ConfettiViz";
-
 import TilesViz from "@/components/gpu-viz/TilesViz";
 import { View } from "@/components/Themed";
 import { FontAwesome } from "@expo/vector-icons";
 import { useContext } from "react";
-import { TrackerContext } from "../../components/context/TrackerContext";
 import Colors from "../../constants/Colors";
 
 function TrackerVizPanel() {
@@ -111,10 +110,12 @@ export default function TrackerScreen() {
         <ConfettiViz />
       ) : null}
       <TrackerVizPanel />
-      <Text style={styles.boldText}>
-        Today's count: {trackerState[trackerState.length - 1]}/{goalState}
-      </Text>
-      <TrackerInputPanel />
+      <View style={{ width: "100%", alignItems: "center", gap: 40 }}>
+        <Text style={styles.boldText}>
+          Today's count: {trackerState[trackerState.length - 1]}/{goalState}
+        </Text>
+        <TrackerInputPanel />
+      </View>
     </View>
   );
 }
@@ -123,8 +124,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     alignItems: "center",
-    justifyContent: "center",
+    justifyContent: "flex-end",
     padding: 20,
+    paddingTop: 0,
     gap: 50,
   },
 

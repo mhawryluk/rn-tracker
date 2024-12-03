@@ -1,4 +1,4 @@
-import { useContext, useEffect } from "react";
+import { useContext, useEffect, useMemo } from "react";
 import { Canvas, useGPUContext } from "react-native-wgpu";
 import { arrayOf, i32, u32, vec2f, vec4f } from "typegpu/data";
 import tgpu, { asReadonly, asUniform, builtin } from "typegpu/experimental";
@@ -72,6 +72,8 @@ export const mainFrag = tgpu
     "span.y": SPAN_Y,
   });
 
+const ValuesData = arrayOf(i32, SPAN_X * SPAN_Y);
+
 export default function TilesViz() {
   const [goalState] = useContext(GoalContext);
   const [trackerState] = useContext(TrackerContext);
@@ -90,27 +92,31 @@ export default function TilesViz() {
   useGPUSetup(context, presentationFormat);
 
   const valuesBuffer = useBuffer(
-    arrayOf(i32, valuesState.length),
+    ValuesData,
     valuesState,
     ["storage"],
     "values"
   );
 
-  const limitBuffer = useBuffer(u32, goalState, ["uniform"]);
+  const limitBuffer = useBuffer(u32, goalState, ["uniform"], "limit");
 
-  const pipeline = root
-    .withVertex(mainVert, {})
-    .withFragment(
-      mainFrag.$uses({
-        limit: asUniform(limitBuffer),
-        values: asReadonly(valuesBuffer),
-      }),
-      { format: presentationFormat }
-    )
-    .withPrimitive({
-      topology: "triangle-strip",
-    })
-    .createPipeline();
+  const pipeline = useMemo(
+    () =>
+      root
+        .withVertex(mainVert, {})
+        .withFragment(
+          mainFrag.$uses({
+            limit: asUniform(limitBuffer),
+            values: asReadonly(valuesBuffer),
+          }),
+          { format: presentationFormat }
+        )
+        .withPrimitive({
+          topology: "triangle-strip",
+        })
+        .createPipeline(),
+    [root]
+  );
 
   useEffect(() => {
     if (!context) {

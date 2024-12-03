@@ -1,8 +1,8 @@
 import React, { useCallback, useContext, useMemo, useRef } from "react";
 import { Canvas, useGPUContext } from "react-native-wgpu";
 import tgpu, { builtin, std } from "typegpu/experimental";
-
 import { arrayOf, bool, f32, struct, u32, vec3f, vec4f } from "typegpu/data";
+
 import { GoalContext } from "../context/GoalContext";
 import { TrackerContext } from "../context/TrackerContext";
 import { useBuffer, useFrame, useGPUSetup, useRoot } from "../gpu/utils";
@@ -325,17 +325,17 @@ export default function BoxesViz() {
         )
         .createPipeline()
         .with(renderBindGroupLayout, renderBindGroup),
-    []
+    [root]
   );
 
   const frameNum = useRef(0);
   const frame = useCallback(
     (deltaTime: number) => {
-      if (!context || !pipeline) {
+      if (!context) {
         return;
       }
 
-      canvasDimsBuffer?.write({
+      canvasDimsBuffer.write({
         width: context.canvas.width,
         height: context.canvas.height,
       });
@@ -345,10 +345,10 @@ export default function BoxesViz() {
         BOX_CENTER.y,
         Math.sin(frameNum.current) * CAMERA_DISTANCE + BOX_CENTER.z
       );
-      cameraPositionBuffer?.write(cameraPos);
+      cameraPositionBuffer.write(cameraPos);
 
       const forwardAxis = std.normalize(std.sub(BOX_CENTER, cameraPos));
-      cameraAxesBuffer?.write({
+      cameraAxesBuffer.write({
         forward: forwardAxis,
         up: UP_AXIS,
         right: std.cross(UP_AXIS, forwardAxis),

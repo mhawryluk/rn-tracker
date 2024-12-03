@@ -5,6 +5,7 @@ import { RNCanvasContext } from "react-native-wgpu";
 import { Parsed } from "typegpu/data";
 import { AnyTgpuData, ExperimentalTgpuRoot } from "typegpu/experimental";
 import { RootContext } from "../context/RootContext";
+import { useFocusEffect } from "expo-router";
 
 export function useRoot(): ExperimentalTgpuRoot {
   const root = useContext(RootContext);
@@ -16,7 +17,7 @@ export function useRoot(): ExperimentalTgpuRoot {
 
 export function useGPUSetup(
   context: RNCanvasContext | null,
-  presentationFormat: GPUTextureFormat
+  presentationFormat: GPUTextureFormat = navigator.gpu.getPreferredCanvasFormat()
 ) {
   const root = useRoot();
   useEffect(() => {
@@ -33,7 +34,7 @@ export function useGPUSetup(
       format: presentationFormat,
       alphaMode: "premultiplied",
     });
-  }, [context]);
+  }, [context, presentationFormat]);
 }
 
 export function useBuffer<T extends AnyTgpuData>(
@@ -44,7 +45,7 @@ export function useBuffer<T extends AnyTgpuData>(
 ) {
   const root = useRoot();
   const buffer = useMemo(
-    () => root.createBuffer(schema).$usage(...usage).$name(label),
+    () => root.createBuffer(schema, value).$usage(...usage).$name(label),
     [root, schema, label, ...usage]
   );
 
@@ -66,7 +67,7 @@ export function useFrame(loop: (deltaTime: number, dispose: () => void) => unkno
     }
   }, []);
 
-  useEffect(() => {
+  useFocusEffect(useCallback(() => {
     dispose();
 
     let lastTime = Date.now();
@@ -80,5 +81,5 @@ export function useFrame(loop: (deltaTime: number, dispose: () => void) => unkno
     frame.current = requestAnimationFrame(runner);
 
     return dispose
-  }, [loop]);
+  }, [loop]));
 }
