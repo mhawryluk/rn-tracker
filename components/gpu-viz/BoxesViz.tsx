@@ -1,5 +1,5 @@
 import React, { useCallback, useContext, useMemo, useRef } from "react";
-import { Canvas, useGPUContext } from "react-native-wgpu";
+import { Canvas } from "react-native-wgpu";
 import tgpu, { builtin, std } from "typegpu/experimental";
 import { arrayOf, bool, f32, struct, u32, vec3f, vec4f } from "typegpu/data";
 
@@ -23,7 +23,7 @@ const UP_AXIS = vec3f(0, 1, 0);
 
 // #endregion
 
-// #region data structures
+// #region data structures and layouts
 
 const BoxStruct = struct({
   isActive: u32,
@@ -49,6 +49,14 @@ const CameraAxesStruct = struct({
 
 const CanvasDimsStruct = struct({ width: u32, height: u32 });
 const BoxMatrixData = arrayOf(arrayOf(arrayOf(BoxStruct, Z), Y), X);
+
+const bindGroupLayout = tgpu.bindGroupLayout({
+  boxMatrix: { storage: BoxMatrixData },
+  cameraPosition: { storage: vec3f },
+  cameraAxes: { storage: CameraAxesStruct },
+  canvasDims: { uniform: CanvasDimsStruct },
+  boxSize: { uniform: u32 },
+});
 
 // #endregion
 
@@ -209,6 +217,7 @@ const fragmentFunction = tgpu
 }`
   )
   .$uses({
+    ...bindGroupLayout.bound,
     RayStruct,
     getBoxIntersection,
     X,
@@ -254,10 +263,8 @@ export default function BoxesViz() {
   );
 
   const root = useRoot();
-  const { ref, context } = useGPUContext();
-
   const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
-  useGPUSetup(context, presentationFormat);
+  const { ref, context } = useGPUSetup(presentationFormat);
 
   // buffers
 
@@ -293,39 +300,26 @@ export default function BoxesViz() {
 
   // bind groups and layouts
 
-  const [renderBindGroupLayout, renderBindGroup] = useMemo(() => {
-    const layout = tgpu.bindGroupLayout({
-      boxMatrix: { storage: boxMatrixBuffer.dataType },
-      cameraPosition: { storage: cameraPositionBuffer.dataType },
-      cameraAxes: { storage: cameraAxesBuffer.dataType },
-      canvasDims: { uniform: canvasDimsBuffer.dataType },
-      boxSize: { uniform: boxSizeBuffer.dataType },
-    });
-
-    const group = layout.populate({
-      boxMatrix: boxMatrixBuffer,
-      cameraPosition: cameraPositionBuffer,
-      cameraAxes: cameraAxesBuffer,
-      canvasDims: canvasDimsBuffer,
-      boxSize: boxSizeBuffer,
-    });
-
-    return [layout, group];
-  }, []);
+  const renderBindGroup = useMemo(
+    () =>
+      bindGroupLayout.populate({
+        boxMatrix: boxMatrixBuffer,
+        cameraPosition: cameraPositionBuffer,
+        cameraAxes: cameraAxesBuffer,
+        canvasDims: canvasDimsBuffer,
+        boxSize: boxSizeBuffer,
+      }),
+    []
+  );
 
   const pipeline = useMemo(
     () =>
       root
         .withVertex(vertexFunction, {})
-        .withFragment(
-          fragmentFunction.$uses({
-            ...renderBindGroupLayout.bound,
-          }),
-          { format: presentationFormat }
-        )
+        .withFragment(fragmentFunction, { format: presentationFormat })
         .createPipeline()
-        .with(renderBindGroupLayout, renderBindGroup),
-    [root]
+        .with(bindGroupLayout, renderBindGroup),
+    [root, renderBindGroup]
   );
 
   const frameNum = useRef(0);
@@ -356,6 +350,7 @@ export default function BoxesViz() {
 
       frameNum.current += (ROTATION_SPEED * deltaTime) / 1000;
 
+      console.log("boxes");
       pipeline
         .withColorAttachment({
           view: context.getCurrentTexture().createView(),
@@ -373,9 +368,5 @@ export default function BoxesViz() {
 
   useFrame(frame);
 
-  return (
-    <>
-      <Canvas ref={ref} style={{ height: "100%", aspectRatio: 1 }} />
-    </>
-  );
+  return <Canvas ref={ref} style={{ height: "100%", aspectRatio: 1 }} />;
 }

@@ -130,10 +130,8 @@ const dataLayout = tgpu.vertexLayout(
 
 export default function ConfettiViz() {
   const root = useRoot();
-  const { ref, context } = useGPUContext();
-
   const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
-  useGPUSetup(context, presentationFormat);
+  const { ref, context } = useGPUSetup(presentationFormat);
 
   // buffers
 
@@ -174,7 +172,7 @@ export default function ConfettiViz() {
   const timeBuffer = useBuffer(f32, undefined, ["storage"], "time");
 
   const particleDataStorage = useMemo(
-    () => (particleDataBuffer ? asMutable(particleDataBuffer) : undefined),
+    () => asMutable(particleDataBuffer),
     [particleDataBuffer]
   );
   const deltaTimeUniform = useMemo(

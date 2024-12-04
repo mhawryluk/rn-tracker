@@ -1,6 +1,6 @@
-import { useCallback, useContext, useEffect, useMemo, useRef } from "react";
+import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { PixelRatio } from "react-native";
-import { RNCanvasContext } from "react-native-wgpu";
+import { RNCanvasContext, useCanvasEffect } from "react-native-wgpu";
 
 import { Parsed } from "typegpu/data";
 import { AnyTgpuData, ExperimentalTgpuRoot } from "typegpu/experimental";
@@ -15,26 +15,35 @@ export function useRoot(): ExperimentalTgpuRoot {
   return root;
 }
 
+
 export function useGPUSetup(
-  context: RNCanvasContext | null,
   presentationFormat: GPUTextureFormat = navigator.gpu.getPreferredCanvasFormat()
 ) {
   const root = useRoot();
-  useEffect(() => {
-    if (!context) {
+  const [context, setContext] = useState<RNCanvasContext | null>(null);
+
+  const ref = useCanvasEffect(() => {
+    const ctx = ref.current?.getContext("webgpu")!;
+
+    if (!ctx) {
+      setContext(null);
       return;
     }
 
-    const canvas = context.canvas as HTMLCanvasElement;
+    const canvas = ctx.canvas as HTMLCanvasElement;
     canvas.width = canvas.clientWidth * PixelRatio.get();
     canvas.height = canvas.clientHeight * PixelRatio.get();
 
-    context.configure({
+    ctx.configure({
       device: root.device,
       format: presentationFormat,
       alphaMode: "premultiplied",
     });
-  }, [context, presentationFormat]);
+
+    setContext(ctx);
+  });
+
+  return { ref, context };
 }
 
 export function useBuffer<T extends AnyTgpuData>(
@@ -60,6 +69,7 @@ export function useBuffer<T extends AnyTgpuData>(
 
 export function useFrame(loop: (deltaTime: number, dispose: () => void) => unknown) {
   const frame = useRef<number | undefined>();
+  
   const dispose = useCallback(() => {
     console.log("disposing animation")
     if (frame.current !== undefined) {

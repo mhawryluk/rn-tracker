@@ -1,5 +1,5 @@
 import { useCallback, useContext, useEffect, useMemo, useRef } from "react";
-import { Canvas, useGPUContext } from "react-native-wgpu";
+import { Canvas } from "react-native-wgpu";
 import {
   arrayOf,
   bool,
@@ -593,8 +593,7 @@ export default function WaterViz() {
 
   const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
   const root = useRoot();
-  const { ref, context } = useGPUContext();
-  useGPUSetup(context, presentationFormat);
+  const { ref, context } = useGPUSetup(presentationFormat);
 
   const gridAlphaBuffer = useBuffer(GridData, undefined, ["storage"]);
   const gridBetaBuffer = useBuffer(GridData, undefined, ["storage"]);

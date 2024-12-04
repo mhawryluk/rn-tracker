@@ -1,5 +1,5 @@
 import { useContext, useEffect, useMemo } from "react";
-import { Canvas, useGPUContext } from "react-native-wgpu";
+import { Canvas } from "react-native-wgpu";
 import { arrayOf, i32, u32, vec2f, vec4f } from "typegpu/data";
 import tgpu, { asReadonly, asUniform, builtin } from "typegpu/experimental";
 
@@ -19,7 +19,7 @@ export const mainVert = tgpu
     }
   )
   .does(
-    `(@builtin(vertex_index) vertexIndex: u32) -> Output {
+    /* wgsl */ `(@builtin(vertex_index) vertexIndex: u32) -> Output {
     var pos = array<vec2f, 4>(
       vec2(1, 1), // top-right
       vec2(-1, 1), // top-left
@@ -49,7 +49,7 @@ export const mainVert = tgpu
 export const mainFrag = tgpu
   .fragmentFn({ uv: vec2f, pos: builtin.position }, vec4f)
   .does(
-    `(@location(0) uv: vec2f) -> @location(0) vec4f {
+    /* wgsl */ `(@location(0) uv: vec2f) -> @location(0) vec4f {
     let x = floor(uv.x * f32(span.x));
     let y = floor((1 - uv.y) * f32(span.y));
     let value = values[u32(y * f32(span.x) + x)];
@@ -87,9 +87,7 @@ export default function TilesViz() {
   const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
   const root = useRoot();
 
-  const { ref, context } = useGPUContext();
-
-  useGPUSetup(context, presentationFormat);
+  const { ref, context } = useGPUSetup(presentationFormat);
 
   const valuesBuffer = useBuffer(
     ValuesData,
