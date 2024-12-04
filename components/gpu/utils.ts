@@ -1,11 +1,10 @@
-import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { PixelRatio } from "react-native";
 import { RNCanvasContext, useCanvasEffect } from "react-native-wgpu";
-
 import { Parsed } from "typegpu/data";
 import { AnyTgpuData, ExperimentalTgpuRoot } from "typegpu/experimental";
+
 import { RootContext } from "../context/RootContext";
-import { useFocusEffect } from "expo-router";
 
 export function useRoot(): ExperimentalTgpuRoot {
   const root = useContext(RootContext);
@@ -23,7 +22,7 @@ export function useGPUSetup(
   const [context, setContext] = useState<RNCanvasContext | null>(null);
 
   const ref = useCanvasEffect(() => {
-    const ctx = ref.current?.getContext("webgpu")!;
+    const ctx = ref.current?.getContext("webgpu");
 
     if (!ctx) {
       setContext(null);
@@ -62,34 +61,48 @@ export function useBuffer<T extends AnyTgpuData>(
     if (value !== undefined && buffer && !buffer.destroyed) {
       buffer.write(value);
     }
-  }, [buffer, value]);
+  }, [value]);
 
   return buffer;
 }
 
-export function useFrame(loop: (deltaTime: number, dispose: () => void) => unknown) {
-  const frame = useRef<number | undefined>();
-  
-  const dispose = useCallback(() => {
-    console.log("disposing animation")
-    if (frame.current !== undefined) {
-      cancelAnimationFrame(frame.current);
-    }
-  }, []);
+function useEvent<TFunction extends (...params: any[]) => any>(
+  handler: TFunction,
+) {
+  const handlerRef = useRef(handler);
 
-  useFocusEffect(useCallback(() => {
-    dispose();
+  useLayoutEffect(() => {
+    handlerRef.current = handler;
+  });
+
+  return useCallback((...args: Parameters<TFunction>) => {
+    const fn = handlerRef.current;
+    return fn(...args);
+  }, []) as TFunction;
+}
+
+export function useFrame(loop: (deltaTime: number) => unknown, isRunning = true) {
+  const loopEvent = useEvent(loop);
+  useEffect(() => {
+    if (!isRunning) {
+      return
+    }
 
     let lastTime = Date.now();
+
     const runner = () => {
       const now = Date.now();
       const dt = now - lastTime;
       lastTime = now;
-      loop(dt, dispose);
-      frame.current = requestAnimationFrame(runner);
+      loopEvent(dt);
+      frame = requestAnimationFrame(runner);
     };
-    frame.current = requestAnimationFrame(runner);
 
-    return dispose
-  }, [loop]));
+    let frame = requestAnimationFrame(runner);
+
+    return () => {
+      console.log("disposing animation"),
+      cancelAnimationFrame(frame);
+    }
+  }, [loopEvent, isRunning]);
 }

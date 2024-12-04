@@ -84,9 +84,8 @@ export default function TilesViz() {
     ...new Array(5).fill(-1),
   ];
 
-  const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
   const root = useRoot();
-
+  const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
   const { ref, context } = useGPUSetup(presentationFormat);
 
   const valuesBuffer = useBuffer(

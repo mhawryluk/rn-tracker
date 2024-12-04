@@ -1,7 +1,8 @@
-import React, { useCallback, useContext, useMemo, useRef } from "react";
+import { useIsFocused } from "@react-navigation/native";
+import React, { useContext, useMemo, useRef } from "react";
 import { Canvas } from "react-native-wgpu";
-import tgpu, { builtin, std } from "typegpu/experimental";
 import { arrayOf, bool, f32, struct, u32, vec3f, vec4f } from "typegpu/data";
+import tgpu, { builtin, std } from "typegpu/experimental";
 
 import { GoalContext } from "../context/GoalContext";
 import { TrackerContext } from "../context/TrackerContext";
@@ -323,50 +324,48 @@ export default function BoxesViz() {
   );
 
   const frameNum = useRef(0);
-  const frame = useCallback(
-    (deltaTime: number) => {
-      if (!context) {
-        return;
-      }
+  const frame = (deltaTime: number) => {
+    if (!context) {
+      return;
+    }
 
-      canvasDimsBuffer.write({
-        width: context.canvas.width,
-        height: context.canvas.height,
-      });
+    canvasDimsBuffer.write({
+      width: context.canvas.width,
+      height: context.canvas.height,
+    });
 
-      const cameraPos = vec3f(
-        Math.cos(frameNum.current) * CAMERA_DISTANCE + BOX_CENTER.x,
-        BOX_CENTER.y,
-        Math.sin(frameNum.current) * CAMERA_DISTANCE + BOX_CENTER.z
-      );
-      cameraPositionBuffer.write(cameraPos);
+    const cameraPos = vec3f(
+      Math.cos(frameNum.current) * CAMERA_DISTANCE + BOX_CENTER.x,
+      BOX_CENTER.y,
+      Math.sin(frameNum.current) * CAMERA_DISTANCE + BOX_CENTER.z
+    );
+    cameraPositionBuffer.write(cameraPos);
 
-      const forwardAxis = std.normalize(std.sub(BOX_CENTER, cameraPos));
-      cameraAxesBuffer.write({
-        forward: forwardAxis,
-        up: UP_AXIS,
-        right: std.cross(UP_AXIS, forwardAxis),
-      });
+    const forwardAxis = std.normalize(std.sub(BOX_CENTER, cameraPos));
+    cameraAxesBuffer.write({
+      forward: forwardAxis,
+      up: UP_AXIS,
+      right: std.cross(UP_AXIS, forwardAxis),
+    });
 
-      frameNum.current += (ROTATION_SPEED * deltaTime) / 1000;
+    frameNum.current += (ROTATION_SPEED * deltaTime) / 1000;
 
-      console.log("boxes");
-      pipeline
-        .withColorAttachment({
-          view: context.getCurrentTexture().createView(),
-          clearValue: [1, 1, 1, 0],
-          loadOp: "clear",
-          storeOp: "store",
-        })
-        .draw(6);
+    // console.log("boxes");
+    pipeline
+      .withColorAttachment({
+        view: context.getCurrentTexture().createView(),
+        clearValue: [1, 1, 1, 0],
+        loadOp: "clear",
+        storeOp: "store",
+      })
+      .draw(6);
 
-      root.flush();
-      context.present();
-    },
-    [context]
-  );
+    root.flush();
+    context.present();
+  };
 
-  useFrame(frame);
+  const isFocused = useIsFocused();
+  useFrame(frame, isFocused);
 
   return <Canvas ref={ref} style={{ height: "100%", aspectRatio: 1 }} />;
 }

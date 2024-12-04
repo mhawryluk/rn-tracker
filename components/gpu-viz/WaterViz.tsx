@@ -23,6 +23,7 @@ import tgpu, {
   type TgpuBufferReadonly,
 } from "typegpu/experimental";
 
+import { useIsFocused } from "@react-navigation/native";
 import { TrackerContext } from "../context/TrackerContext";
 import { useBuffer, useFrame, useGPUSetup, useRoot } from "../gpu/utils";
 
@@ -742,34 +743,33 @@ export default function WaterViz() {
     root.flush();
   }, [root, sourceParamsBuffer, timeBuffer, context]);
 
-  const frame = useCallback(
-    (deltaTime: number) => {
-      if (!context) {
-        return;
-      }
+  const frame = (deltaTime: number) => {
+    if (!context) {
+      return;
+    }
 
-      // console.log("water frame");
-      msSinceLastTick.current += deltaTime;
+    console.log("water frame");
+    msSinceLastTick.current += deltaTime;
 
-      if (msSinceLastTick.current >= TIME_STEP) {
-        for (let i = 0; i < STEPS_PER_TICK; ++i) {
-          tick();
-        }
-        primary.current.render();
-        root.flush();
-        msSinceLastTick.current -= TIME_STEP;
-        context.present();
+    if (msSinceLastTick.current >= TIME_STEP) {
+      for (let i = 0; i < STEPS_PER_TICK; ++i) {
+        tick();
       }
-    },
-    [context, tick, primary.current]
-  );
+      primary.current.render();
+      root.flush();
+      msSinceLastTick.current -= TIME_STEP;
+      context.present();
+    }
+  };
 
   useEffect(() => {
     sourceIntensity = 0.1;
     setTimeout(() => (sourceIntensity = 0), 1000);
   }, [trackerState]);
 
-  useFrame(frame);
+  const isFocused = useIsFocused();
+  console.log("isFocused", isFocused);
+  useFrame(frame, isFocused);
 
   return (
     <Canvas

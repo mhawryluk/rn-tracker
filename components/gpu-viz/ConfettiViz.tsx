@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useMemo } from "react";
-import { Canvas, useGPUContext } from "react-native-wgpu";
+import { useMemo } from "react";
+import { Canvas } from "react-native-wgpu";
 
+import { useIsFocused } from "@react-navigation/native";
 import { arrayOf, f32, struct, vec2f, vec4f } from "typegpu/data";
 import tgpu, { asMutable, asUniform, builtin } from "typegpu/experimental";
 import { useBuffer, useFrame, useGPUSetup, useRoot } from "../gpu/utils";
@@ -163,7 +164,16 @@ export default function ConfettiViz() {
 
   const particleDataBuffer = useBuffer(
     arrayOf(ParticleData, PARTICLE_AMOUNT),
-    undefined,
+    Array(PARTICLE_AMOUNT)
+      .fill(0)
+      .map(() => ({
+        position: vec2f(Math.random() * 2 - 1, Math.random() * 2 + 1),
+        velocity: vec2f(
+          (Math.random() * 2 - 1) / 50,
+          -(Math.random() / 25 + 0.01)
+        ),
+        seed: Math.random(),
+      })),
     ["storage", "uniform", "vertex"],
     "particle_data"
   );
@@ -226,65 +236,46 @@ export default function ConfettiViz() {
     []
   );
 
-  useEffect(() => {
-    // randomize positions
-    particleDataBuffer.write(
-      Array(PARTICLE_AMOUNT)
-        .fill(0)
-        .map(() => ({
-          position: vec2f(Math.random() * 2 - 1, Math.random() * 2 + 1),
-          velocity: vec2f(
-            (Math.random() * 2 - 1) / 50,
-            -(Math.random() / 25 + 0.01)
-          ),
-          seed: Math.random(),
-        }))
-    );
-  }, []);
+  const frame = (deltaTime: number) => {
+    if (!context) {
+      return;
+    }
 
-  const frame = useCallback(
-    (deltaTime: number, dispose: () => void) => {
-      if (!context) {
-        return;
-      }
+    deltaTimeBuffer.write(deltaTime);
+    canvasAspectRatioBuffer.write(context.canvas.width / context.canvas.height);
+    computePipeline.dispatchWorkgroups(PARTICLE_AMOUNT);
 
-      deltaTimeBuffer.write(deltaTime);
-      canvasAspectRatioBuffer.write(
-        context.canvas.width / context.canvas.height
-      );
-      computePipeline.dispatchWorkgroups(PARTICLE_AMOUNT);
+    // particleDataBuffer.read().then((data) => {
+    //   console.log(data[0].position.x);
+    //   if (
+    //     data.every(
+    //       (particle) =>
+    //         particle.position.x < -1 ||
+    //         particle.position.x > 1 ||
+    //         particle.position.y < -1.5
+    //     )
+    //   ) {
+    //     console.log("confetti animation ended");
+    // //    dispose();
+    //   }
+    // });
 
-      particleDataBuffer.read().then((data) => {
-        if (
-          data.every(
-            (particle) =>
-              particle.position.x < -1 ||
-              particle.position.x > 1 ||
-              particle.position.y < -1.5
-          )
-        ) {
-          console.log("confetti animation ended");
-          dispose();
-        }
-      });
+    // console.log("draw confetti");
+    renderPipeline
+      .withColorAttachment({
+        view: context.getCurrentTexture().createView(),
+        clearValue: [0, 0, 0, 0],
+        loadOp: "clear" as const,
+        storeOp: "store" as const,
+      })
+      .draw(4, PARTICLE_AMOUNT);
 
-      // console.log("draw confetti");
-      renderPipeline
-        .withColorAttachment({
-          view: context.getCurrentTexture().createView(),
-          clearValue: [0, 0, 0, 0],
-          loadOp: "clear" as const,
-          storeOp: "store" as const,
-        })
-        .draw(4, PARTICLE_AMOUNT);
+    root.flush();
+    context.present();
+  };
 
-      root.flush();
-      context.present();
-    },
-    [context]
-  );
-
-  useFrame(frame);
+  const isFocused = useIsFocused();
+  useFrame(frame, isFocused);
 
   return (
     <Canvas
