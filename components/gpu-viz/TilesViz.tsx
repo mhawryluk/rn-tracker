@@ -79,6 +79,10 @@ export const mainFrag = tgpu
       return vec4f();
     }
 
+    if value == -2 {
+      return  vec4f(229.0/255, 222.0/255, 216.0/255, 1);
+    }
+
     if value < i32(limit) {
       let opacity = (f32(value) / f32(limit)) * 0.2 + 0.8;
       return vec4f(0.76, 0.65, 0.58, opacity);

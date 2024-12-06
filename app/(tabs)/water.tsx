@@ -16,8 +16,10 @@ import WaterViz from "@/components/gpu-viz/WaterViz";
 
 function TrackerVizPanel() {
   return (
-    <View style={{ ...styles.viz, width: "80%" }}>
-      <WaterViz />
+    <View style={styles.vizPanel}>
+      <View style={styles.viz}>
+        <WaterViz />
+      </View>
     </View>
   );
 }
@@ -116,8 +118,13 @@ const styles = StyleSheet.create({
     width: "100%",
   },
 
+  vizPanel: {
+    flex: 1,
+    justifyContent: "center",
+  },
+
   viz: {
-    width: Dimensions.get("window").width - 40,
+    width: "80%",
     aspectRatio: 1,
     justifyContent: "center",
     alignItems: "center",

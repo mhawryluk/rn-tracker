@@ -32,9 +32,9 @@ import { useBuffer, useFrame, useGPUSetup, useRoot } from "../gpu/utils";
 const MAX_GRID_SIZE = 64;
 const MAX_OBSTACLES = 3;
 const SOURCE_RADIUS = 0.05;
-const GRID_SIZE = 16;
+const GRID_SIZE = 40;
 const TIME_STEP = 50;
-const STEPS_PER_TICK = 128;
+const STEPS_PER_TICK = 50;
 
 const obstacles: {
   x: number;
@@ -164,32 +164,32 @@ const flowFromCell = tgpu
   .fn([i32, i32, i32, i32], f32)
   .does(
     /* wgsl */ `(my_x: i32, my_y: i32, x: i32, y: i32) -> f32 {
-        if (!isValidCoord(x, y)) {
-          return 0.;
-        }
-
-        let src = getCell(x, y);
-
-        let dest_pos = vec2i(vec2f(f32(x), f32(y)) + src.xy);
-        let dest = getCell(dest_pos.x, dest_pos.y);
-        let diff = src.z - dest.z;
-        var out_flow = min(max(0.01, 0.3 + diff * 0.1), src.z);
-
-        if (length(src.xy) < 0.5) {
-          out_flow = 0.;
-        }
-
-        if (my_x == x && my_y == y) {
-          // 'src.z - out_flow' is how much is left in the src
-          return src.z - out_flow;
-        }
-
-        if (dest_pos.x == my_x && dest_pos.y == my_y) {
-          return out_flow;
-        }
-
+      if (!isValidCoord(x, y)) {
         return 0.;
-        }`
+      }
+
+      let src = getCell(x, y);
+
+      let dest_pos = vec2i(vec2f(f32(x), f32(y)) + src.xy);
+      let dest = getCell(dest_pos.x, dest_pos.y);
+      let diff = src.z - dest.z;
+      var out_flow = min(max(0.01, 0.3 + diff * 0.1), src.z);
+
+      if (length(src.xy) < 0.5) {
+        out_flow = 0.;
+      }
+
+      if (my_x == x && my_y == y) {
+        // 'src.z - out_flow' is how much is left in the src
+        return src.z - out_flow;
+      }
+
+      if (dest_pos.x == my_x && dest_pos.y == my_y) {
+        return out_flow;
+      }
+
+      return 0.;
+      }`
   )
   .$uses({ getCell, isValidCoord })
   .$name("flow_from_cell");
@@ -244,50 +244,50 @@ const computeVelocity = tgpu
   .fn([i32, i32], vec2f)
   .does(
     /* wgsl */ `(x: i32, y: i32) -> vec2f {
-        let gravity_cost = 0.5;
+      let gravity_cost = 0.5;
 
-        let neighbor_offsets = array<vec2i, 4>(
-          vec2i( 0,  1),
-          vec2i( 0, -1),
-          vec2i( 1,  0),
-          vec2i(-1,  0),
-        );
+      let neighbor_offsets = array<vec2i, 4>(
+        vec2i( 0,  1),
+        vec2i( 0, -1),
+        vec2i( 1,  0),
+        vec2i(-1,  0),
+      );
 
-        let cell = getCell(x, y);
-        var least_cost = cell.z;
+      let cell = getCell(x, y);
+      var least_cost = cell.z;
 
-        // Direction choices of the same cost, one is chosen
-        // randomly at the end of the process.
-        var dir_choices: array<vec2f, 4>;
-        var dir_choice_count: u32 = 1;
-        dir_choices[0] = vec2f(0., 0.);
+      // Direction choices of the same cost, one is chosen
+      // randomly at the end of the process.
+      var dir_choices: array<vec2f, 4>;
+      var dir_choice_count: u32 = 1;
+      dir_choices[0] = vec2f(0., 0.);
 
-        for (var i = 0; i < 4; i++) {
-          let offset = neighbor_offsets[i];
-          let neighbor_density = getCell(x + offset.x, y + offset.y).z;
-          let cost = neighbor_density + f32(offset.y) * gravity_cost;
-          let is_valid_flow_out = isValidFlowOut(x + offset.x, y + offset.y);
+      for (var i = 0; i < 4; i++) {
+        let offset = neighbor_offsets[i];
+        let neighbor_density = getCell(x + offset.x, y + offset.y).z;
+        let cost = neighbor_density + f32(offset.y) * gravity_cost;
+        let is_valid_flow_out = isValidFlowOut(x + offset.x, y + offset.y);
 
-          if (!is_valid_flow_out) {
-            continue;
-          }
-
-          if (cost == least_cost) {
-            // another valid direction
-            dir_choices[dir_choice_count] = vec2f(f32(offset.x), f32(offset.y));
-            dir_choice_count++;
-          }
-          else if (cost < least_cost) {
-            // new best choice
-            least_cost = cost;
-            dir_choices[0] = vec2f(f32(offset.x), f32(offset.y));
-            dir_choice_count = 1;
-          }
+        if (!is_valid_flow_out) {
+          continue;
         }
 
-        let least_cost_dir = dir_choices[u32(rand01() * f32(dir_choice_count))];
-        return least_cost_dir;
-        }`
+        if (cost == least_cost) {
+          // another valid direction
+          dir_choices[dir_choice_count] = vec2f(f32(offset.x), f32(offset.y));
+          dir_choice_count++;
+        }
+        else if (cost < least_cost) {
+          // new best choice
+          least_cost = cost;
+          dir_choices[0] = vec2f(f32(offset.x), f32(offset.y));
+          dir_choice_count = 1;
+        }
+      }
+
+      let least_cost_dir = dir_choices[u32(rand01() * f32(dir_choice_count))];
+      return least_cost_dir;
+      }`
   )
   .$uses({ getCell, isValidFlowOut, isValidCoord, rand01 });
 
@@ -295,25 +295,25 @@ const mainInitWorld = tgpu
   .computeFn([builtin.globalInvocationId], { workgroupSize: [1] })
   .does(
     /* wgsl */ `(@builtin(global_invocation_id) gid: vec3u) {
-        let x = i32(gid.x);
-        let y = i32(gid.y);
-        let index = coordsToIndex(x, y);
+      let x = i32(gid.x);
+      let y = i32(gid.y);
+      let index = coordsToIndex(x, y);
 
-        var value = vec4f();
+      var value = vec4f();
 
-        if (!isValidFlowOut(x, y)) {
-          value = vec4f(0., 0., 0., 0.);
+      if (!isValidFlowOut(x, y)) {
+        value = vec4f(0., 0., 0., 0.);
+      }
+      else {
+        // Ocean
+        if (y < i32(gridSizeUniform) / 2) {
+          let depth = 1. - f32(y) / (f32(gridSizeUniform) / 2.);
+          value = vec4f(0., 0., depth * 1, 0.);
         }
-        else {
-          // Ocean
-          if (y < i32(gridSizeUniform) / 2) {
-            let depth = 1. - f32(y) / (f32(gridSizeUniform) / 2.);
-            value = vec4f(0., 0., depth * 1, 0.);
-          }
-        }
+      }
 
-        outputGridSlot[index] = value;
-      }`
+      outputGridSlot[index] = value;
+    }`
   )
   .$uses({
     gridSizeUniform: GRID_SIZE,
@@ -539,16 +539,17 @@ const fragmentMain = tgpu
         let velocity = cell.xy;
         let density = max(0., cell.z);
 
-        let obstacle_color = vec4f(0.4006, 0.3210, 0.2784, 1.);
+        let obstacle_color = vec4f(0.4006, 0.3210, 0.2784, 0.9);
 
         let background = vec4f(0, 0, 0, 0);
-        let first_color = vec4f(0.3310, 0.3381, 0.3310, 1.);
-        let second_color = vec4f(0.3169, 0.3642, 0.3189, 1.);
-        let third_color = vec4f(0.3091, 0.3758, 0.3152, 1.);
 
-        let first_threshold = 2.;
-        let second_threshold = 10.;
-        let third_threshold = 20.;
+        let first_color = vec4f(144/255.0, 224/255.0, 239/255.0, 1.);
+        let second_color = vec4f(98/255.0, 121/255.0, 184/255.0, 1.);
+        let third_color = vec4f(5/255.0, 32/255.0, 74/255.0, 1.);
+
+        let first_threshold = 1.0;
+        let second_threshold = 5.0;
+        let third_threshold = 10.0;
 
         if (isInsideObstacle(x, y)) {
           return obstacle_color;
@@ -693,11 +694,9 @@ export default function WaterViz() {
             return;
           }
 
-          const textureView = context.getCurrentTexture().createView();
-
           renderPipeline
             .withColorAttachment({
-              view: textureView,
+              view: context.getCurrentTexture().createView(),
               clearValue: [0, 0, 0, 0],
               loadOp: "clear",
               storeOp: "store",
@@ -748,7 +747,7 @@ export default function WaterViz() {
       return;
     }
 
-    console.log("water frame");
+    // console.log("water frame");
     msSinceLastTick.current += deltaTime;
 
     if (msSinceLastTick.current >= TIME_STEP) {
@@ -768,7 +767,6 @@ export default function WaterViz() {
   }, [trackerState]);
 
   const isFocused = useIsFocused();
-  console.log("isFocused", isFocused);
   useFrame(frame, isFocused);
 
   return (

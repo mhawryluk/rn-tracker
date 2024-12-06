@@ -23,7 +23,7 @@ function TrackerVizPanel() {
   const goalBuffer = useBuffer(u32, goalState, ["uniform"], "goal");
 
   return (
-    <View style={styles.viz}>
+    <View style={styles.vizPanel}>
       <ScrollView
         horizontal
         pagingEnabled
@@ -31,15 +31,19 @@ function TrackerVizPanel() {
         showsHorizontalScrollIndicator
         scrollEnabled
       >
-        <View>
+        <View style={styles.vizContainer}>
           <Text style={{ ...styles.boldText, paddingLeft: 20 }}>Today</Text>
-          <BoxesViz goalBuffer={goalBuffer} />
+          <View style={styles.viz}>
+            <BoxesViz goalBuffer={goalBuffer} />
+          </View>
         </View>
-        <View>
+        <View style={styles.vizContainer}>
           <Text style={{ ...styles.boldText, paddingLeft: 20 }}>
             This month
           </Text>
-          <TilesViz goalBuffer={goalBuffer} />
+          <View style={styles.viz}>
+            <TilesViz goalBuffer={goalBuffer} />
+          </View>
         </View>
       </ScrollView>
     </View>
@@ -113,7 +117,7 @@ export default function TrackerScreen() {
       <TrackerVizPanel />
       <View style={{ width: "100%", alignItems: "center", gap: 40 }}>
         <Text style={styles.boldText}>
-          Today's count: {trackerState[trackerState.length - 1]}/{goalState}
+          Count: {trackerState[trackerState.length - 1]}/{goalState}
         </Text>
         <TrackerInputPanel />
       </View>
@@ -128,7 +132,6 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
     padding: 20,
     paddingTop: 0,
-    gap: 50,
   },
 
   input: {
@@ -138,6 +141,15 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.light.lightTint,
     borderRadius: 20,
     width: "100%",
+  },
+
+  vizPanel: {
+    flex: 1,
+  },
+
+  vizContainer: {
+    paddingVertical: 40,
+    justifyContent: "space-between",
   },
 
   viz: {
