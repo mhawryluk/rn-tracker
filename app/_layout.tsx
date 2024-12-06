@@ -15,6 +15,7 @@ import { useColorScheme } from "@/components/useColorScheme";
 import Colors from "@/constants/Colors";
 import { useDevice } from "react-native-wgpu";
 import tgpu from "typegpu/experimental";
+import ConfettiViz from "@/components/gpu-viz/ConfettiViz";
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -67,6 +68,9 @@ export default function RootLayout() {
                 options={{ presentation: "modal", title: "Settings" }}
               />
             </Stack>
+            {trackerState[trackerState.length - 1] >= goalState ? (
+              <ConfettiViz />
+            ) : null}
           </RootContext.Provider>
         </GoalContext.Provider>
       </TrackerContext.Provider>

@@ -1,7 +1,24 @@
 import { useContext, useEffect, useMemo } from "react";
 import { Canvas } from "react-native-wgpu";
-import { arrayOf, i32, u32, vec2f, vec4f } from "typegpu/data";
-import tgpu, { asReadonly, asUniform, builtin } from "typegpu/experimental";
+import {
+  arrayOf,
+  I32,
+  i32,
+  TgpuArray,
+  u32,
+  U32,
+  vec2f,
+  vec4f,
+} from "typegpu/data";
+import tgpu, {
+  asReadonly,
+  asUniform,
+  builtin,
+  TgpuBuffer,
+  TgpuFn,
+  Uniform,
+  wgsl,
+} from "typegpu/experimental";
 
 import { GoalContext } from "../context/GoalContext";
 import { TrackerContext } from "../context/TrackerContext";
@@ -46,13 +63,17 @@ export const mainVert = tgpu
     },
   });
 
+const getLimitSlot = wgsl.slot<TgpuFn<[], U32>>();
+const getValuesSlot = wgsl.slot<TgpuFn<[], TgpuArray<I32>>>();
+
 export const mainFrag = tgpu
   .fragmentFn({ uv: vec2f, pos: builtin.position }, vec4f)
   .does(
     /* wgsl */ `(@location(0) uv: vec2f) -> @location(0) vec4f {
+    let limit = getLimitSlot();
     let x = floor(uv.x * f32(span.x));
     let y = floor((1 - uv.y) * f32(span.y));
-    let value = values[u32(y * f32(span.x) + x)];
+    let value = getValuesSlot()[u32(y * f32(span.x) + x)];
 
     if value == -1 {
       return vec4f();
@@ -68,13 +89,19 @@ export const mainFrag = tgpu
   }`
   )
   .$uses({
+    getLimitSlot,
+    getValuesSlot,
     "span.x": SPAN_X,
     "span.y": SPAN_Y,
   });
 
 const ValuesData = arrayOf(i32, SPAN_X * SPAN_Y);
 
-export default function TilesViz() {
+export default function TilesViz({
+  goalBuffer,
+}: {
+  goalBuffer: TgpuBuffer<U32> & Uniform;
+}) {
   const [goalState] = useContext(GoalContext);
   const [trackerState] = useContext(TrackerContext);
   const valuesState = [
@@ -95,19 +122,25 @@ export default function TilesViz() {
     "values"
   );
 
-  const limitBuffer = useBuffer(u32, goalState, ["uniform"], "limit");
-
   const pipeline = useMemo(
     () =>
       root
-        .withVertex(mainVert, {})
-        .withFragment(
-          mainFrag.$uses({
-            limit: asUniform(limitBuffer),
-            values: asReadonly(valuesBuffer),
-          }),
-          { format: presentationFormat }
+        .with(
+          getLimitSlot,
+          tgpu
+            .fn([], u32)
+            .does(`() -> u32 { return limit; }`)
+            .$uses({ limit: asUniform(goalBuffer) })
         )
+        .with(
+          getValuesSlot,
+          tgpu
+            .fn([], arrayOf(i32, SPAN_X * SPAN_Y))
+            .does(`() -> array<i32, SPAN_X * SPAN_Y> { return values; }`)
+            .$uses({ values: asReadonly(valuesBuffer), SPAN_X, SPAN_Y })
+        )
+        .withVertex(mainVert, {})
+        .withFragment(mainFrag, { format: presentationFormat })
         .withPrimitive({
           topology: "triangle-strip",
         })
@@ -120,10 +153,12 @@ export default function TilesViz() {
       return;
     }
 
+    goalBuffer.write(goalState);
+
     pipeline
       .withColorAttachment({
         view: context.getCurrentTexture().createView(),
-        clearValue: [0, 0, 0, 0],
+        clearValue: [1, 1, 1, 0],
         loadOp: "clear",
         storeOp: "store",
       })

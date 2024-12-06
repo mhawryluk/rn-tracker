@@ -1,10 +1,17 @@
 import { useIsFocused } from "@react-navigation/native";
 import React, { useContext, useMemo, useRef } from "react";
 import { Canvas } from "react-native-wgpu";
-import { arrayOf, bool, f32, struct, u32, vec3f, vec4f } from "typegpu/data";
-import tgpu, { builtin, std } from "typegpu/experimental";
+import { bool, f32, struct, U32, u32, vec3f, vec4f } from "typegpu/data";
+import tgpu, {
+  asUniform,
+  builtin,
+  std,
+  TgpuBuffer,
+  TgpuFn,
+  Uniform,
+  wgsl
+} from "typegpu/experimental";
 
-import { GoalContext } from "../context/GoalContext";
 import { TrackerContext } from "../context/TrackerContext";
 import { useBuffer, useFrame, useGPUSetup, useRoot } from "../gpu/utils";
 
@@ -49,10 +56,8 @@ const CameraAxesStruct = struct({
 });
 
 const CanvasDimsStruct = struct({ width: u32, height: u32 });
-const BoxMatrixData = arrayOf(arrayOf(arrayOf(BoxStruct, Z), Y), X);
 
 const bindGroupLayout = tgpu.bindGroupLayout({
-  boxMatrix: { storage: BoxMatrixData },
   cameraPosition: { storage: vec3f },
   cameraAxes: { storage: CameraAxesStruct },
   canvasDims: { uniform: CanvasDimsStruct },
@@ -137,6 +142,45 @@ const getBoxIntersection = tgpu
   .$uses({ RayStruct, IntersectionStruct })
   .$name("box_intersection");
 
+const getBox = tgpu
+  .fn([u32, u32, u32], IntersectionStruct)
+  .does(
+    /* wgsl */ `(
+  index: u32,
+  highest: u32,
+  goal: u32,
+) -> BoxStruct {
+  var albedo: vec4f;
+  var isActive: u32;
+
+  if index + 1 > highest {
+    isActive = 0;
+    albedo = vec4f();
+  } else {
+    isActive = 1;
+    var multiplier: u32 = 1;
+    if index >= goal  {
+      multiplier = 2;
+    }
+
+    let opacity = (f32(index) / f32(multiplier * goal)) * 0.2 + 0.8;
+  
+    if index + 1 < goal {
+      albedo = vec4f(0.76, 0.65, 0.58, opacity);
+    } else {
+      albedo = vec4f(0.604, 0.694, 0.608, opacity);
+    }
+  }
+
+  var output: BoxStruct;
+  output.isActive = isActive;
+  output.albedo = albedo;
+  return output;
+}`
+  )
+  .$uses({ BoxStruct })
+  .$name("box_intersection");
+
 const vertexFunction = tgpu
   .vertexFn({ vertexIndex: builtin.vertexIndex }, { outPos: builtin.position })
   .does(
@@ -162,11 +206,16 @@ const vertexFunction = tgpu
     },
   });
 
+const getGoalSlot = wgsl.slot<TgpuFn<[], U32>>();
+const getHighestSlot = wgsl.slot<TgpuFn<[], U32>>();
+
 const fragmentFunction = tgpu
   .fragmentFn({ outPos: builtin.position }, vec4f)
   .does(
     /* wgsl */ `(@builtin(position) position: vec4f) -> @location(0) vec4f {
   let minDim = f32(min(canvasDims.width, canvasDims.height));
+  let goal = getGoalSlot();
+  let highestValue = getHighestSlot();
 
   var ray: RayStruct;
   ray.origin = cameraPosition;
@@ -194,7 +243,9 @@ const fragmentFunction = tgpu
     for (var i = 0; i < X; i = i+1) {
       for (var j = 0; j < Y; j = j+1) {
         for (var k = 0; k < Z; k = k+1) {
-          if boxMatrix[i][j][k].isActive == 0 {
+          let index = u32(k * X * Y + (Y - j - 1) * X + i);
+          let box = getBox(index, highestValue, goal);  
+          if box.isActive == 0 {
             continue;
           }
 
@@ -205,7 +256,7 @@ const fragmentFunction = tgpu
           );
 
           if intersection.intersects && (!intersectionFound || intersection.tMin < tMin) {
-            color = boxMatrix[i][j][k].albedo;
+            color = box.albedo;
             tMin = intersection.tMin;
             intersectionFound = true;
           }
@@ -219,6 +270,7 @@ const fragmentFunction = tgpu
   )
   .$uses({
     ...bindGroupLayout.bound,
+    getBox,
     RayStruct,
     getBoxIntersection,
     X,
@@ -226,41 +278,22 @@ const fragmentFunction = tgpu
     Z,
     MAX_BOX_SIZE,
     BIG_BOX_BOUNDS,
+    getGoalSlot,
+    getHighestSlot,
   })
   .$name("fragment_main");
 
 // #endregion
 
-export default function BoxesViz() {
-  const [goalState] = useContext(GoalContext);
+export default function BoxesViz({
+  goalBuffer,
+}: {
+  goalBuffer: TgpuBuffer<U32> & Uniform;
+}) {
   const [trackerState] = useContext(TrackerContext);
-  const boxMatrixState = useMemo(
-    () =>
-      Array.from({ length: X }, (_, i) =>
-        Array.from({ length: Y }, (_, j) =>
-          Array.from({ length: Z }, (_, k) => {
-            const index = k * X * Y + (Y - j - 1) * X + i;
-            if (index + 1 > trackerState[trackerState.length - 1]) {
-              return {
-                isActive: 0,
-                albedo: vec4f(),
-              };
-            }
-
-            const opacity =
-              (index / ((index < goalState ? 1 : 2) * goalState)) * 0.2 + 0.8;
-
-            return {
-              isActive: 1,
-              albedo:
-                index + 1 < goalState
-                  ? vec4f(0.76, 0.65, 0.58, opacity)
-                  : vec4f(0.604, 0.694, 0.608, opacity),
-            };
-          })
-        )
-      ),
-    [trackerState, goalState]
+  const highestValue = useMemo(
+    () => trackerState[trackerState.length - 1],
+    [trackerState]
   );
 
   const root = useRoot();
@@ -268,12 +301,15 @@ export default function BoxesViz() {
   const { ref, context } = useGPUSetup(presentationFormat);
 
   // buffers
-
-  const boxMatrixBuffer = useBuffer(
-    BoxMatrixData,
-    boxMatrixState,
-    ["storage"],
-    "box_array"
+  const highestValueBuffer = useBuffer(
+    u32,
+    highestValue,
+    ["uniform"],
+    "highest value"
+  );
+  const highestValueUniform = useMemo(
+    () => asUniform(highestValueBuffer),
+    [highestValueBuffer]
   );
 
   const cameraPositionBuffer = useBuffer(
@@ -299,12 +335,13 @@ export default function BoxesViz() {
 
   const boxSizeBuffer = useBuffer(u32, MAX_BOX_SIZE, ["uniform"], "box_size");
 
+  const goalUniform = useMemo(() => asUniform(goalBuffer), [goalBuffer]);
+
   // bind groups and layouts
 
   const renderBindGroup = useMemo(
     () =>
       bindGroupLayout.populate({
-        boxMatrix: boxMatrixBuffer,
         cameraPosition: cameraPositionBuffer,
         cameraAxes: cameraAxesBuffer,
         canvasDims: canvasDimsBuffer,
@@ -313,9 +350,25 @@ export default function BoxesViz() {
     []
   );
 
+  // draw
+
   const pipeline = useMemo(
     () =>
       root
+        .with(
+          getGoalSlot,
+          tgpu
+            .fn([], u32)
+            .does(`() -> u32 { return goal; }`)
+            .$uses({ goal: goalUniform })
+        )
+        .with(
+          getHighestSlot,
+          tgpu
+            .fn([], u32)
+            .does(`() -> u32 { return highest; }`)
+            .$uses({ highest: highestValueUniform })
+        )
         .withVertex(vertexFunction, {})
         .withFragment(fragmentFunction, { format: presentationFormat })
         .createPipeline()

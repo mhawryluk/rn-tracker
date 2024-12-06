@@ -1,3 +1,5 @@
+import { FontAwesome } from "@expo/vector-icons";
+import { useContext } from "react";
 import {
   Dimensions,
   Pressable,
@@ -10,14 +12,16 @@ import {
 import { GoalContext } from "@/components/context/GoalContext";
 import { TrackerContext } from "@/components/context/TrackerContext";
 import BoxesViz from "@/components/gpu-viz/BoxesViz";
-import ConfettiViz from "@/components/gpu-viz/ConfettiViz";
 import TilesViz from "@/components/gpu-viz/TilesViz";
+import { useBuffer } from "@/components/gpu/utils";
 import { View } from "@/components/Themed";
-import { FontAwesome } from "@expo/vector-icons";
-import { useContext } from "react";
+import { u32 } from "typegpu/data";
 import Colors from "../../constants/Colors";
 
 function TrackerVizPanel() {
+  const [goalState] = useContext(GoalContext);
+  const goalBuffer = useBuffer(u32, goalState, ["uniform"], "goal");
+
   return (
     <View style={styles.viz}>
       <ScrollView
@@ -29,13 +33,13 @@ function TrackerVizPanel() {
       >
         <View>
           <Text style={{ ...styles.boldText, paddingLeft: 20 }}>Today</Text>
-          <BoxesViz />
+          <BoxesViz goalBuffer={goalBuffer} />
         </View>
         <View>
           <Text style={{ ...styles.boldText, paddingLeft: 20 }}>
             This month
           </Text>
-          <TilesViz />
+          <TilesViz goalBuffer={goalBuffer} />
         </View>
       </ScrollView>
     </View>
@@ -106,9 +110,6 @@ export default function TrackerScreen() {
 
   return (
     <View style={styles.container}>
-      {trackerState[trackerState.length - 1] >= goalState ? (
-        <ConfettiViz />
-      ) : null}
       <TrackerVizPanel />
       <View style={{ width: "100%", alignItems: "center", gap: 40 }}>
         <Text style={styles.boldText}>
