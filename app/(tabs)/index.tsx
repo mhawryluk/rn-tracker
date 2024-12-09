@@ -6,9 +6,11 @@ import { TrackerContext } from "../_layout";
 import Colors from "../../constants/Colors";
 import { FontAwesome } from "@expo/vector-icons";
 import { FlatList } from "react-native";
+import { useRoot } from "@/components/gpu/utils";
 
 function TrackerVizPanel() {
   const [trackerState, _] = useContext(TrackerContext);
+  const root = useRoot();
 
   return (
     <View style={styles.viz}>

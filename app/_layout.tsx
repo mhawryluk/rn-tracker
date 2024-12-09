@@ -7,7 +7,7 @@ import {
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import { Dispatch, useEffect, useState } from "react";
+import { Dispatch, useEffect, useMemo, useState } from "react";
 import React, { createContext, type SetStateAction } from "react";
 import "react-native-reanimated";
 
@@ -16,6 +16,10 @@ export const TrackerContext = createContext<
 >([[], () => {}]);
 
 import { useColorScheme } from "@/components/useColorScheme";
+import { useDevice } from "react-native-wgpu";
+import tgpu from "typegpu/experimental";
+import { RootContext } from "@/components/context/RootContext";
+import ConfettiViz from "@/components/gpu-viz/ConfettiViz";
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -60,17 +64,30 @@ function RootLayoutNav() {
     3, 2, 8, 0, 7, 0,
   ]);
 
+  const { device } = useDevice();
+  const root = useMemo(
+    () => (device ? tgpu.initFromDevice({ device }) : null),
+    [device]
+  );
+
+  if (root === null) {
+    return null;
+  }
+
   return (
-    <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-      <TrackerContext.Provider value={[trackerState, setTrackerState]}>
-        <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen
-            name="settings"
-            options={{ presentation: "modal", title: "Settings" }}
-          />
-        </Stack>
-      </TrackerContext.Provider>
-    </ThemeProvider>
+    <RootContext.Provider value={root}>
+      <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+        <TrackerContext.Provider value={[trackerState, setTrackerState]}>
+          <Stack>
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen
+              name="settings"
+              options={{ presentation: "modal", title: "Settings" }}
+            />
+          </Stack>
+          {true ? <ConfettiViz /> : null}
+        </TrackerContext.Provider>
+      </ThemeProvider>
+    </RootContext.Provider>
   );
 }
