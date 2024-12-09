@@ -300,8 +300,6 @@ export default function BoxesViz({
   const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
   const { ref, context } = useGPUSetup(presentationFormat);
 
-  console.log("boxes rerender");
-
   // buffers
   const highestValueBuffer = useBuffer(
     u32,
