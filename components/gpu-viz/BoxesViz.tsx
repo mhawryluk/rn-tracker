@@ -9,7 +9,7 @@ import tgpu, {
   TgpuBuffer,
   TgpuFn,
   Uniform,
-  wgsl
+  wgsl,
 } from "typegpu/experimental";
 
 import { TrackerContext } from "../context/TrackerContext";
@@ -300,6 +300,8 @@ export default function BoxesViz({
   const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
   const { ref, context } = useGPUSetup(presentationFormat);
 
+  console.log("boxes rerender");
+
   // buffers
   const highestValueBuffer = useBuffer(
     u32,
@@ -420,5 +422,7 @@ export default function BoxesViz({
   const isFocused = useIsFocused();
   useFrame(frame, isFocused);
 
-  return <Canvas ref={ref} style={{ height: "100%", aspectRatio: 1 }} />;
+  return (
+    <Canvas transparent ref={ref} style={{ height: "100%", aspectRatio: 1 }} />
+  );
 }

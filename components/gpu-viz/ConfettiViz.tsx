@@ -109,7 +109,7 @@ const mainCompute = tgpu.computeFn([builtin.globalInvocationId], {
   if index == 0 {
     time += deltaTime;
   }
-  let phase = (time + particleData[index].seed) / 200; 
+  let phase = (time / 300) + particleData[index].seed; 
   particleData[index].position += particleData[index].velocity * deltaTime / 20 + vec2f(sin(phase) / 600, cos(phase) / 500);
 }`);
 
@@ -245,21 +245,20 @@ export default function ConfettiViz() {
     canvasAspectRatioBuffer.write(context.canvas.width / context.canvas.height);
     computePipeline.dispatchWorkgroups(PARTICLE_AMOUNT);
 
-    // root.flush();
-    // particleDataBuffer.read().then((data) => {
-    //   console.log(data[10].position.x);
-    //   if (
-    //     data.every(
-    //       (particle) =>
-    //         particle.position.x < -1 ||
-    //         particle.position.x > 1 ||
-    //         particle.position.y < -1.5
-    //     )
-    //   ) {
-    //     console.log("confetti animation ended");
-    // //    dispose();
-    //   }
-    // });
+    particleDataBuffer.read().then((data) => {
+      console.log(data[10].position.x);
+      if (
+        data.every(
+          (particle) =>
+            particle.position.x < -1 ||
+            particle.position.x > 1 ||
+            particle.position.y < -1.5
+        )
+      ) {
+        console.log("confetti animation ended");
+        //    dispose();
+      }
+    });
 
     // console.log("draw confetti");
     renderPipeline
@@ -280,6 +279,7 @@ export default function ConfettiViz() {
 
   return (
     <Canvas
+      transparent
       ref={ref}
       style={{
         position: "absolute",

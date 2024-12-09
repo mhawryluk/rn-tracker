@@ -747,7 +747,7 @@ export default function WaterViz() {
       return;
     }
 
-    console.log("water frame");
+    // console.log("water frame");
     msSinceLastTick.current += deltaTime;
 
     if (msSinceLastTick.current >= TIME_STEP) {
@@ -771,6 +771,7 @@ export default function WaterViz() {
 
   return (
     <Canvas
+      transparent
       ref={ref}
       style={{
         height: "100%",

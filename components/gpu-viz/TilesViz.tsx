@@ -171,6 +171,7 @@ export default function TilesViz({
 
   return (
     <Canvas
+      transparent
       ref={ref}
       style={{
         height: "100%",

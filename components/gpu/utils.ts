@@ -8,6 +8,7 @@ import { RootContext } from "../context/RootContext";
 
 export function useRoot(): ExperimentalTgpuRoot {
   const root = useContext(RootContext);
+
   if (root === null) {
     throw new Error("please provide root");
   }

@@ -7,6 +7,7 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useMemo, useState } from "react";
 import "react-native-reanimated";
+import { Text } from "react-native";
 
 import { GoalContext } from "@/components/context/GoalContext";
 import { RootContext } from "@/components/context/RootContext";
@@ -47,7 +48,7 @@ export default function RootLayout() {
   );
 
   if (root === null) {
-    return null;
+    return <Text style={{ color: "red" }}>No device 😢</Text>;
   }
 
   return (

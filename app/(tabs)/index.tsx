@@ -13,7 +13,7 @@ import { GoalContext } from "@/components/context/GoalContext";
 import { TrackerContext } from "@/components/context/TrackerContext";
 import BoxesViz from "@/components/gpu-viz/BoxesViz";
 import TilesViz from "@/components/gpu-viz/TilesViz";
-import { useBuffer } from "@/components/gpu/utils";
+import { useBuffer, useRoot } from "@/components/gpu/utils";
 import { View } from "@/components/Themed";
 import { u32 } from "typegpu/data";
 import Colors from "../../constants/Colors";
@@ -53,6 +53,8 @@ function TrackerVizPanel() {
 function TrackerInputPanel() {
   const [_, setTrackerState] = useContext(TrackerContext);
   const colorScheme = useColorScheme();
+
+  // console.log(setTrackerState, colorScheme);
 
   return (
     <View style={styles.input}>
@@ -111,6 +113,9 @@ function TrackerInputPanel() {
 export default function TrackerScreen() {
   const [trackerState] = useContext(TrackerContext);
   const [goalState] = useContext(GoalContext);
+  const root = useRoot();
+
+  // console.log(trackerState, goalState, root);
 
   return (
     <View style={styles.container}>
