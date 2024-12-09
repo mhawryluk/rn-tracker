@@ -245,8 +245,9 @@ export default function ConfettiViz() {
     canvasAspectRatioBuffer.write(context.canvas.width / context.canvas.height);
     computePipeline.dispatchWorkgroups(PARTICLE_AMOUNT);
 
+    // root.flush();
     // particleDataBuffer.read().then((data) => {
-    //   console.log(data[0].position.x);
+    //   console.log(data[10].position.x);
     //   if (
     //     data.every(
     //       (particle) =>

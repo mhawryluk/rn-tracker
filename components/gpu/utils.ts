@@ -57,7 +57,7 @@ export function useBuffer<T extends AnyTgpuData>(
     [root, schema, label, ...usage]
   );
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (value !== undefined && buffer && !buffer.destroyed) {
       buffer.write(value);
     }

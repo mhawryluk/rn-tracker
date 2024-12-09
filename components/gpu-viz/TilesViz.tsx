@@ -157,8 +157,6 @@ export default function TilesViz({
       return;
     }
 
-    goalBuffer.write(goalState);
-
     pipeline
       .withColorAttachment({
         view: context.getCurrentTexture().createView(),

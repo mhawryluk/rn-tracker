@@ -32,7 +32,7 @@ import { useBuffer, useFrame, useGPUSetup, useRoot } from "../gpu/utils";
 const MAX_GRID_SIZE = 64;
 const MAX_OBSTACLES = 3;
 const SOURCE_RADIUS = 0.05;
-const GRID_SIZE = 40;
+const GRID_SIZE = 16;
 const TIME_STEP = 50;
 const STEPS_PER_TICK = 50;
 
@@ -747,7 +747,7 @@ export default function WaterViz() {
       return;
     }
 
-    // console.log("water frame");
+    console.log("water frame");
     msSinceLastTick.current += deltaTime;
 
     if (msSinceLastTick.current >= TIME_STEP) {
