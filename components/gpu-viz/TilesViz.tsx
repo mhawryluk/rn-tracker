@@ -101,6 +101,16 @@ export const mainFrag = tgpu
 
 const ValuesData = arrayOf(i32, SPAN_X * SPAN_Y);
 
+const now = new Date(Date.now());
+const daysInMonth = new Date(
+  now.getFullYear(),
+  now.getMonth() + 1,
+  0
+).getDate();
+const firstDayOfTheWeek =
+  ((new Date(now.getFullYear(), now.getMonth(), 1).getDay() + 6) % 7) + 1;
+console.log(firstDayOfTheWeek);
+
 export default function TilesViz({
   goalBuffer,
 }: {
@@ -109,10 +119,12 @@ export default function TilesViz({
   const [goalState] = useContext(GoalContext);
   const [trackerState] = useContext(TrackerContext);
   const valuesState = [
-    ...new Array(6).fill(-1),
+    ...new Array(firstDayOfTheWeek - 1).fill(-1),
     ...trackerState,
-    ...new Array(31 - trackerState.length).fill(-2),
-    ...new Array(5).fill(-1),
+    ...new Array(daysInMonth - trackerState.length).fill(-2),
+    ...new Array(
+      Math.max(0, SPAN_X * SPAN_Y - (firstDayOfTheWeek - 1 + daysInMonth))
+    ).fill(-1),
   ];
 
   const root = useRoot();
