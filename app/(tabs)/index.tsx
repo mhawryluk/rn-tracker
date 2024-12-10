@@ -136,6 +136,7 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
     padding: 20,
     paddingTop: 0,
+    gap: 30,
   },
 
   input: {
