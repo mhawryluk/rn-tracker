@@ -109,7 +109,6 @@ const daysInMonth = new Date(
 ).getDate();
 const firstDayOfTheWeek =
   ((new Date(now.getFullYear(), now.getMonth(), 1).getDay() + 6) % 7) + 1;
-console.log(firstDayOfTheWeek);
 
 export default function TilesViz({
   goalBuffer,

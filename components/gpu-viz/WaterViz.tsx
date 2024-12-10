@@ -723,8 +723,9 @@ export default function WaterViz() {
   useEffect(() => {
     obstaclesBuffer.write(obstaclesToConcrete());
     prevObstaclesBuffer.write(obstaclesToConcrete());
-    primary.current.init();
-  }, [obstaclesBuffer, prevObstaclesBuffer, primary.current]);
+    odd.init();
+    even.init();
+  }, [obstaclesBuffer, prevObstaclesBuffer]);
 
   let msSinceLastTick = useRef(0);
 
@@ -761,9 +762,22 @@ export default function WaterViz() {
     }
   };
 
+  const prevValue = useRef<number | null>(null);
+
   useEffect(() => {
-    sourceIntensity = 0.1;
-    setTimeout(() => (sourceIntensity = 0), 1000);
+    if (
+      prevValue.current !== null &&
+      trackerState[trackerState.length - 1] > prevValue.current
+    ) {
+      sourceIntensity = 0.1;
+      setTimeout(() => (sourceIntensity = 0), 1000);
+      prevValue.current = trackerState[trackerState.length - 1];
+    } else {
+      odd.init();
+      even.init();
+    }
+
+    prevValue.current = trackerState[trackerState.length - 1];
   }, [trackerState]);
 
   const isFocused = useIsFocused();
