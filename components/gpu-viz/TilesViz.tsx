@@ -166,6 +166,7 @@ export default function TilesViz({
       })
       .draw(4);
 
+    root.flush();
     context.present();
   }, [context, valuesState, goalState]);
 

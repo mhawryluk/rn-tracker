@@ -1,8 +1,8 @@
 import { useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { PixelRatio } from "react-native";
 import { RNCanvasContext, useCanvasEffect } from "react-native-wgpu";
-import { Parsed } from "typegpu/data";
-import { AnyTgpuData, ExperimentalTgpuRoot } from "typegpu/experimental";
+import type { Infer, AnyData } from "typegpu/data";
+import { ExperimentalTgpuRoot } from "typegpu/experimental";
 
 import { RootContext } from "../context/RootContext";
 
@@ -46,9 +46,9 @@ export function useGPUSetup(
   return { ref, context };
 }
 
-export function useBuffer<T extends AnyTgpuData>(
+export function useBuffer<T extends AnyData>(
   schema: T,
-  value: Parsed<T> | undefined,
+  value: Infer<T> | undefined,
   usage: ("uniform" | "storage" | "vertex")[],
   label?: string
 ) {

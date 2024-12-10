@@ -2,14 +2,14 @@ import { useMemo, useState } from "react";
 import { Canvas } from "react-native-wgpu";
 
 import { useIsFocused } from "@react-navigation/native";
-import { arrayOf, f32, struct, vec2f, vec4f } from "typegpu/data";
+import { arrayOf, f32, struct, type v4f, vec2f, vec4f } from "typegpu/data";
 import tgpu, { asMutable, asUniform, builtin } from "typegpu/experimental";
 import { useBuffer, useFrame, useGPUSetup, useRoot } from "../gpu/utils";
 
 // #region constants
 
 const PARTICLE_AMOUNT = 200;
-const COLOR_PALETTE: vec4f[] = [
+const COLOR_PALETTE: v4f[] = [
   [154, 177, 155],
   [67, 129, 193],
   [99, 71, 77],

@@ -113,7 +113,6 @@ function TrackerInputPanel() {
 export default function TrackerScreen() {
   const [trackerState] = useContext(TrackerContext);
   const [goalState] = useContext(GoalContext);
-  const root = useRoot();
 
   // console.log(trackerState, goalState, root);
 

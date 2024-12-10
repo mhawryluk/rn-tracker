@@ -4,7 +4,6 @@ import {
   ThemeProvider,
 } from "@react-navigation/native";
 import { Stack } from "expo-router";
-import * as SplashScreen from "expo-splash-screen";
 import React, { useMemo, useState } from "react";
 import "react-native-reanimated";
 import { Text } from "react-native";
@@ -28,9 +27,6 @@ export const unstable_settings = {
   initialRouteName: "(tabs)",
 };
 
-// Prevent the splash screen from auto-hiding before asset loading is complete.
-SplashScreen.preventAutoHideAsync();
-
 export default function RootLayout() {
   const today = new Date(Date.now());
   const colorScheme = useColorScheme();
@@ -48,7 +44,7 @@ export default function RootLayout() {
   );
 
   if (root === null) {
-    return <Text style={{ color: "red" }}>No device 😢</Text>;
+    return null;
   }
 
   return (

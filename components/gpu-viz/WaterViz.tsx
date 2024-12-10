@@ -10,7 +10,7 @@ import {
   vec2f,
   vec2u,
   vec4f,
-  type Parsed,
+  type Infer,
 } from "typegpu/data";
 import tgpu, {
   asMutable,
@@ -580,7 +580,7 @@ const fragmentMain = tgpu
 
 // #endregion
 
-function obstaclesToConcrete(): Parsed<BoxObstacle>[] {
+function obstaclesToConcrete(): Infer<BoxObstacle>[] {
   return obstacles.map(({ x, y, width, height, enabled }) => ({
     center: vec2u(Math.round(x * GRID_SIZE), Math.round(y * GRID_SIZE)),
     size: vec2u(Math.round(width * GRID_SIZE), Math.round(height * GRID_SIZE)),
@@ -673,7 +673,7 @@ export default function WaterViz() {
           root.flush();
         },
 
-        applyMovedObstacles(bufferData: Parsed<BoxObstacle>[]) {
+        applyMovedObstacles(bufferData: Infer<BoxObstacle>[]) {
           obstaclesBuffer.write(bufferData);
           moveObstaclesPipeline.dispatchWorkgroups(1);
           root.flush();
