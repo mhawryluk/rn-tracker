@@ -1,4 +1,4 @@
-package com.anonymous.rntracker
+package mhawryluk.rntracker
 import expo.modules.splashscreen.SplashScreenManager
 
 import android.os.Build

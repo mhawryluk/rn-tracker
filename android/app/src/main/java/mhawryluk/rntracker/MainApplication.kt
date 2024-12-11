@@ -1,4 +1,4 @@
-package com.anonymous.rntracker
+package mhawryluk.rntracker
 
 import android.app.Application
 import android.content.res.Configuration

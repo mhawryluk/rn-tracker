@@ -9,25 +9,15 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/images/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#FFF7F0"
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.rntracker"
+      "bundleIdentifier": "mhawryluk.rntracker"
     },
     "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
-      },
-      "package": "com.anonymous.rntracker"
-    },
-    "web": {
-      "bundler": "metro",
-      "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "package": "mhawryluk.rntracker"
     },
     "plugins": [
       "expo-router"

@@ -28,7 +28,7 @@
         <key>CFBundleURLSchemes</key>
         <array>
           <string>myapp</string>
-          <string>com.anonymous.rntracker</string>
+          <string>mhawryluk.rntracker</string>
         </array>
       </dict>
     </array>
