@@ -24,7 +24,7 @@ const BIG_BOX_BOUNDS = vec3f(
   Y * MAX_BOX_SIZE,
   Z * MAX_BOX_SIZE
 );
-const ROTATION_SPEED = 0.7;
+const ROTATION_SPEED = 0.5;
 const CAMERA_DISTANCE = 100;
 const BOX_CENTER = std.mul(0.5, BIG_BOX_BOUNDS);
 const UP_AXIS = vec3f(0, 1, 0);
@@ -199,12 +199,7 @@ const vertexFunction = tgpu
   return output;
 }`
   )
-  .$name("vertex_main")
-  .$uses({
-    get VertexOutput() {
-      return vertexFunction.Output;
-    },
-  });
+  .$name("vertex_main");
 
 const getGoalSlot = wgsl.slot<TgpuFn<[], U32>>();
 const getHighestSlot = wgsl.slot<TgpuFn<[], U32>>();

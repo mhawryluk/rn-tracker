@@ -25,7 +25,6 @@
         <category android:name="android.intent.category.DEFAULT"/>
         <category android:name="android.intent.category.BROWSABLE"/>
         <data android:scheme="myapp"/>
-        <data android:scheme="com.anonymous.rntracker"/>
         <data android:scheme="mhawryluk.rntracker"/>
       </intent-filter>
     </activity>

@@ -491,10 +491,10 @@ const mainCompute = tgpu
     outputGridSlot,
   });
 
-const vertexMain = tgpu
-  .vertexFn({ idx: builtin.vertexIndex }, { pos: builtin.position, uv: vec2f })
-  .does(
-    /* wgsl */ `(@builtin(vertex_index) idx: u32) -> VertexOut {
+const vertexMain = tgpu.vertexFn(
+  { idx: builtin.vertexIndex },
+  { pos: builtin.position, uv: vec2f }
+).does(/* wgsl */ `(@builtin(vertex_index) idx: u32) -> VertexOut {
       var pos = array<vec2f, 4>(
         vec2(1, 1), // top-right
         vec2(-1, 1), // top-left
@@ -513,13 +513,7 @@ const vertexMain = tgpu
       output.pos = vec4f(pos[idx].x, pos[idx].y, 0.0, 1.0);
       output.uv = uv[idx];
       return output;
-    }`
-  )
-  .$uses({
-    get VertexOut() {
-      return vertexMain.Output;
-    },
-  });
+    }`);
 
 const fragmentMain = tgpu
   .fragmentFn(

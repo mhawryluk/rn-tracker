@@ -63,11 +63,11 @@ importers:
         specifier: ~0.19.13
         version: 0.19.13(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       react-native-wgpu:
-        specifier: ^0.1.20
-        version: 0.1.20(react-native@0.76.2(@babel/core@7.26.0)(@babel/preset-env@7.26.0(@babel/core@7.26.0))(@react-native-community/cli-server-api@14.1.0)(@types/react@18.3.12)(react@18.3.1))(react@18.3.1)
+        specifier: 0.1.21
+        version: 0.1.21(react-native@0.76.2(@babel/core@7.26.0)(@babel/preset-env@7.26.0(@babel/core@7.26.0))(@react-native-community/cli-server-api@14.1.0)(@types/react@18.3.12)(react@18.3.1))(react@18.3.1)
       typegpu:
-        specifier: https://pkg.csb.dev/software-mansion/TypeGPU/commit/cdee002a/typegpu
-        version: https://pkg.csb.dev/software-mansion/TypeGPU/commit/cdee002a/typegpu
+        specifier: https://pkg.csb.dev/software-mansion/TypeGPU/commit/5742263c/typegpu
+        version: https://pkg.csb.dev/software-mansion/TypeGPU/commit/5742263c/typegpu
     devDependencies:
       '@babel/core':
         specifier: ^7.25.2
@@ -3671,8 +3671,8 @@ packages:
       react: ^18.0.0
       react-dom: ^18.0.0
 
-  react-native-wgpu@0.1.20:
-    resolution: {integrity: sha512-pg+OO9nGaJJp/1jGqSrroACosM/g0DUgr3VbwnBLh7Fzbjfl0kelLCFKhx94Y+0uJlzuhxiuGl+hl5YRWzO3gg==}
+  react-native-wgpu@0.1.21:
+    resolution: {integrity: sha512-3x21RfdKpXsWcNWtcjqOqPnjAUA7IXLLIZjXxFOT6V3WZOjPeL/h9fxXpEsuwbVBuaa6jC+x/RT5TcimecSRjw==}
     peerDependencies:
       react: '*'
       react-native: '*'
@@ -4253,8 +4253,8 @@ packages:
   typed-binary@4.2.0:
     resolution: {integrity: sha512-K8lXyQUAk095YkIkFqV929+epoQqxB0lsx9TBd1mb79565eVWXIRa7emCArRajH+g5nYa3t/ZoaSQIl0RDQMsQ==}
 
-  typegpu@https://pkg.csb.dev/software-mansion/TypeGPU/commit/cdee002a/typegpu:
-    resolution: {tarball: https://pkg.csb.dev/software-mansion/TypeGPU/commit/cdee002a/typegpu}
+  typegpu@https://pkg.csb.dev/software-mansion/TypeGPU/commit/5742263c/typegpu:
+    resolution: {tarball: https://pkg.csb.dev/software-mansion/TypeGPU/commit/5742263c/typegpu}
     version: 0.2.0
     engines: {node: '>=12.20.0'}
 
@@ -9236,7 +9236,7 @@ snapshots:
     transitivePeerDependencies:
       - encoding
 
-  react-native-wgpu@0.1.20(react-native@0.76.2(@babel/core@7.26.0)(@babel/preset-env@7.26.0(@babel/core@7.26.0))(@react-native-community/cli-server-api@14.1.0)(@types/react@18.3.12)(react@18.3.1))(react@18.3.1):
+  react-native-wgpu@0.1.21(react-native@0.76.2(@babel/core@7.26.0)(@babel/preset-env@7.26.0(@babel/core@7.26.0))(@react-native-community/cli-server-api@14.1.0)(@types/react@18.3.12)(react@18.3.1))(react@18.3.1):
     dependencies:
       react: 18.3.1
       react-native: 0.76.2(@babel/core@7.26.0)(@babel/preset-env@7.26.0(@babel/core@7.26.0))(@react-native-community/cli-server-api@14.1.0)(@types/react@18.3.12)(react@18.3.1)
@@ -9856,7 +9856,7 @@ snapshots:
 
   typed-binary@4.2.0: {}
 
-  typegpu@https://pkg.csb.dev/software-mansion/TypeGPU/commit/cdee002a/typegpu:
+  typegpu@https://pkg.csb.dev/software-mansion/TypeGPU/commit/5742263c/typegpu:
     dependencies:
       tinyest: 0.0.0
       typed-binary: 4.2.0

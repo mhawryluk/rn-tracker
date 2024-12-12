@@ -27,16 +27,13 @@ import { useBuffer, useGPUSetup, useRoot } from "../gpu/utils";
 const SPAN_X = 7;
 const SPAN_Y = 6;
 
-export const mainVert = tgpu
-  .vertexFn(
-    { vertexIndex: builtin.vertexIndex },
-    {
-      pos: builtin.position,
-      uv: vec2f,
-    }
-  )
-  .does(
-    /* wgsl */ `(@builtin(vertex_index) vertexIndex: u32) -> Output {
+export const mainVert = tgpu.vertexFn(
+  { vertexIndex: builtin.vertexIndex },
+  {
+    pos: builtin.position,
+    uv: vec2f,
+  }
+).does(/* wgsl */ `(@builtin(vertex_index) vertexIndex: u32) -> Output {
     var pos = array<vec2f, 4>(
       vec2(1, 1), // top-right
       vec2(-1, 1), // top-left
@@ -55,13 +52,7 @@ export const mainVert = tgpu
     out.pos = vec4f(pos[vertexIndex], 0.0, 1.0);
     out.uv = uv[vertexIndex];
     return out;
-  }`
-  )
-  .$uses({
-    get Output() {
-      return mainVert.Output;
-    },
-  });
+  }`);
 
 const getLimitSlot = wgsl.slot<TgpuFn<[], U32>>();
 const getValuesSlot = wgsl.slot<TgpuFn<[], TgpuArray<I32>>>();
