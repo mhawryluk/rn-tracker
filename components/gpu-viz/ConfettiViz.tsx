@@ -2,20 +2,20 @@ import { useMemo, useState } from "react";
 import { Canvas } from "react-native-wgpu";
 
 import { useIsFocused } from "@react-navigation/native";
-import { arrayOf, f32, struct, type v4f, vec2f, vec4f } from "typegpu/data";
+import * as d from "typegpu/data";
 import tgpu, { asMutable, asUniform, builtin } from "typegpu/experimental";
 import { useBuffer, useFrame, useGPUSetup, useRoot } from "../gpu/utils";
 
 // #region constants
 
 const PARTICLE_AMOUNT = 200;
-const COLOR_PALETTE: v4f[] = [
+const COLOR_PALETTE: d.v4f[] = [
   [154, 177, 155],
   [67, 129, 193],
   [99, 71, 77],
   [239, 121, 138],
   [255, 166, 48],
-].map(([r, g, b]) => vec4f(r / 255, g / 255, b / 255, 1));
+].map(([r, g, b]) => d.vec4f(r / 255, g / 255, b / 255, 1));
 
 // #endregion
 
@@ -23,29 +23,29 @@ const COLOR_PALETTE: v4f[] = [
 
 const VertexOutput = {
   position: builtin.position,
-  color: vec4f,
+  color: d.vec4f,
 };
 
-const ParticleGeometry = struct({
-  tilt: f32,
-  angle: f32,
-  color: vec4f,
+const ParticleGeometry = d.struct({
+  tilt: d.f32,
+  angle: d.f32,
+  color: d.vec4f,
 });
 
-const ParticleData = struct({
-  position: vec2f,
-  velocity: vec2f,
-  seed: f32,
+const ParticleData = d.struct({
+  position: d.vec2f,
+  velocity: d.vec2f,
+  seed: d.f32,
 });
 
-const ParticleGeometryArray = arrayOf(ParticleGeometry, PARTICLE_AMOUNT);
-const ParticleDataArray = arrayOf(ParticleData, PARTICLE_AMOUNT);
+const ParticleGeometryArray = d.arrayOf(ParticleGeometry, PARTICLE_AMOUNT);
+const ParticleDataArray = d.arrayOf(ParticleData, PARTICLE_AMOUNT);
 
 // #endregion
 
 // #region functions
 
-const rotate = tgpu.fn([vec2f, f32], vec2f).does(/* wgsl */ `
+const rotate = tgpu.fn([d.vec2f, d.f32], d.vec2f).does(/* wgsl */ `
   (v: vec2f, angle: f32) -> vec2f {
     let pos = vec2(
       (v.x * cos(angle)) - (v.y * sin(angle)),
@@ -58,10 +58,10 @@ const rotate = tgpu.fn([vec2f, f32], vec2f).does(/* wgsl */ `
 const mainVert = tgpu
   .vertexFn(
     {
-      tilt: f32,
-      angle: f32,
-      color: vec4f,
-      center: vec2f,
+      tilt: d.f32,
+      angle: d.f32,
+      color: d.vec4f,
+      center: d.vec2f,
       index: builtin.vertexIndex,
     },
     VertexOutput
@@ -95,7 +95,7 @@ const mainVert = tgpu
   )
   .$uses({ rotate });
 
-const mainFrag = tgpu.fragmentFn(VertexOutput, vec4f).does(/* wgsl */ `
+const mainFrag = tgpu.fragmentFn(VertexOutput, d.vec4f).does(/* wgsl */ `
   (@location(0) color: vec4f) -> @location(0) vec4f {
     return color;
 }`);
@@ -116,12 +116,12 @@ const mainCompute = tgpu.computeFn([builtin.globalInvocationId], {
 // #region layouts
 
 const geometryLayout = tgpu.vertexLayout(
-  (n: number) => arrayOf(ParticleGeometry, n),
+  (n: number) => d.arrayOf(ParticleGeometry, n),
   "instance"
 );
 
 const dataLayout = tgpu.vertexLayout(
-  (n: number) => arrayOf(ParticleData, n),
+  (n: number) => d.arrayOf(ParticleData, n),
   "instance"
 );
 
@@ -135,7 +135,7 @@ export default function ConfettiViz() {
   // buffers
 
   const canvasAspectRatioBuffer = useBuffer(
-    f32,
+    d.f32,
     context ? context.canvas.width / context.canvas.height : 1,
     ["uniform"],
     "aspect_ratio"
@@ -172,8 +172,8 @@ export default function ConfettiViz() {
       Array(PARTICLE_AMOUNT)
         .fill(0)
         .map(() => ({
-          position: vec2f(Math.random() * 2 - 1, Math.random() * 2 + 1),
-          velocity: vec2f(
+          position: d.vec2f(Math.random() * 2 - 1, Math.random() * 2 + 1),
+          velocity: d.vec2f(
             (Math.random() * 2 - 1) / 50,
             -(Math.random() / 25 + 0.01)
           ),
@@ -189,8 +189,13 @@ export default function ConfettiViz() {
     "particle_data"
   );
 
-  const deltaTimeBuffer = useBuffer(f32, undefined, ["uniform"], "delta_time");
-  const timeBuffer = useBuffer(f32, undefined, ["storage"], "time");
+  const deltaTimeBuffer = useBuffer(
+    d.f32,
+    undefined,
+    ["uniform"],
+    "delta_time"
+  );
+  const timeBuffer = useBuffer(d.f32, undefined, ["storage"], "time");
 
   const particleDataStorage = useMemo(
     () => asMutable(particleDataBuffer),
@@ -272,9 +277,10 @@ export default function ConfettiViz() {
     }
 
     // console.log("draw confetti");
+    const texture = context.getCurrentTexture();
     renderPipeline
       .withColorAttachment({
-        view: context.getCurrentTexture().createView(),
+        view: texture.createView(),
         clearValue: [0, 0, 0, 0],
         loadOp: "clear" as const,
         storeOp: "store" as const,
@@ -283,6 +289,7 @@ export default function ConfettiViz() {
 
     root.flush();
     context.present();
+    texture.destroy();
   };
 
   const isFocused = useIsFocused();

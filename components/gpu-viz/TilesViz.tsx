@@ -1,15 +1,6 @@
 import { useContext, useEffect, useMemo } from "react";
 import { Canvas } from "react-native-wgpu";
-import {
-  arrayOf,
-  I32,
-  i32,
-  TgpuArray,
-  u32,
-  U32,
-  vec2f,
-  vec4f,
-} from "typegpu/data";
+import * as d from "typegpu/data";
 import tgpu, {
   asReadonly,
   asUniform,
@@ -31,7 +22,7 @@ export const mainVert = tgpu.vertexFn(
   { vertexIndex: builtin.vertexIndex },
   {
     pos: builtin.position,
-    uv: vec2f,
+    uv: d.vec2f,
   }
 ).does(/* wgsl */ `(@builtin(vertex_index) vertexIndex: u32) -> Output {
     var pos = array<vec2f, 4>(
@@ -54,11 +45,11 @@ export const mainVert = tgpu.vertexFn(
     return out;
   }`);
 
-const getLimitSlot = wgsl.slot<TgpuFn<[], U32>>();
-const getValuesSlot = wgsl.slot<TgpuFn<[], TgpuArray<I32>>>();
+const getLimitSlot = wgsl.slot<TgpuFn<[], d.U32>>();
+const getValuesSlot = wgsl.slot<TgpuFn<[], d.TgpuArray<d.I32>>>();
 
 export const mainFrag = tgpu
-  .fragmentFn({ uv: vec2f, pos: builtin.position }, vec4f)
+  .fragmentFn({ uv: d.vec2f, pos: builtin.position }, d.vec4f)
   .does(
     /* wgsl */ `(@location(0) uv: vec2f) -> @location(0) vec4f {
     let limit = getLimitSlot();
@@ -90,7 +81,7 @@ export const mainFrag = tgpu
     "span.y": SPAN_Y,
   });
 
-const ValuesData = arrayOf(i32, SPAN_X * SPAN_Y);
+const ValuesData = d.arrayOf(d.i32, SPAN_X * SPAN_Y);
 
 const now = new Date(Date.now());
 const daysInMonth = new Date(
@@ -104,7 +95,7 @@ const firstDayOfTheWeek =
 export default function TilesViz({
   goalBuffer,
 }: {
-  goalBuffer: TgpuBuffer<U32> & Uniform;
+  goalBuffer: TgpuBuffer<d.U32> & Uniform;
 }) {
   const [goalState] = useContext(GoalContext);
   const [trackerState] = useContext(TrackerContext);
@@ -134,14 +125,14 @@ export default function TilesViz({
         .with(
           getLimitSlot,
           tgpu
-            .fn([], u32)
+            .fn([], d.u32)
             .does(`() -> u32 { return limit; }`)
             .$uses({ limit: asUniform(goalBuffer) })
         )
         .with(
           getValuesSlot,
           tgpu
-            .fn([], arrayOf(i32, SPAN_X * SPAN_Y))
+            .fn([], d.arrayOf(d.i32, SPAN_X * SPAN_Y))
             .does(`() -> array<i32, SPAN_X * SPAN_Y> { return values; }`)
             .$uses({ values: asReadonly(valuesBuffer), SPAN_X, SPAN_Y })
         )
@@ -159,9 +150,11 @@ export default function TilesViz({
       return;
     }
 
+    const texture = context.getCurrentTexture();
+
     pipeline
       .withColorAttachment({
-        view: context.getCurrentTexture().createView(),
+        view: texture.createView(),
         clearValue: [1, 1, 1, 0],
         loadOp: "clear",
         storeOp: "store",
@@ -170,6 +163,7 @@ export default function TilesViz({
 
     root.flush();
     context.present();
+    texture.destroy();
   }, [context, valuesState, goalState]);
 
   return (

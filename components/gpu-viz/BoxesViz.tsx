@@ -1,7 +1,7 @@
 import { useIsFocused } from "@react-navigation/native";
 import React, { useContext, useMemo, useRef } from "react";
 import { Canvas } from "react-native-wgpu";
-import { bool, f32, struct, U32, u32, vec3f, vec4f } from "typegpu/data";
+import * as d from "typegpu/data";
 import tgpu, {
   asUniform,
   builtin,
@@ -19,7 +19,7 @@ import { useBuffer, useFrame, useGPUSetup, useRoot } from "../gpu/utils";
 
 const [X, Y, Z] = [3, 3, 3];
 const MAX_BOX_SIZE = 15;
-const BIG_BOX_BOUNDS = vec3f(
+const BIG_BOX_BOUNDS = d.vec3f(
   X * MAX_BOX_SIZE,
   Y * MAX_BOX_SIZE,
   Z * MAX_BOX_SIZE
@@ -27,41 +27,41 @@ const BIG_BOX_BOUNDS = vec3f(
 const ROTATION_SPEED = 0.5;
 const CAMERA_DISTANCE = 100;
 const BOX_CENTER = std.mul(0.5, BIG_BOX_BOUNDS);
-const UP_AXIS = vec3f(0, 1, 0);
+const UP_AXIS = d.vec3f(0, 1, 0);
 
 // #endregion
 
 // #region data structures and layouts
 
-const BoxStruct = struct({
-  isActive: u32,
-  albedo: vec4f,
+const BoxStruct = d.struct({
+  isActive: d.u32,
+  albedo: d.vec4f,
 });
 
-const RayStruct = struct({
-  origin: vec3f,
-  direction: vec3f,
+const RayStruct = d.struct({
+  origin: d.vec3f,
+  direction: d.vec3f,
 });
 
-const IntersectionStruct = struct({
-  intersects: bool,
-  tMin: f32,
-  tMax: f32,
+const IntersectionStruct = d.struct({
+  intersects: d.bool,
+  tMin: d.f32,
+  tMax: d.f32,
 });
 
-const CameraAxesStruct = struct({
-  right: vec3f,
-  up: vec3f,
-  forward: vec3f,
+const CameraAxesStruct = d.struct({
+  right: d.vec3f,
+  up: d.vec3f,
+  forward: d.vec3f,
 });
 
-const CanvasDimsStruct = struct({ width: u32, height: u32 });
+const CanvasDimsStruct = d.struct({ width: d.u32, height: d.u32 });
 
 const bindGroupLayout = tgpu.bindGroupLayout({
-  cameraPosition: { storage: vec3f },
+  cameraPosition: { storage: d.vec3f },
   cameraAxes: { storage: CameraAxesStruct },
   canvasDims: { uniform: CanvasDimsStruct },
-  boxSize: { uniform: u32 },
+  boxSize: { uniform: d.u32 },
 });
 
 // #endregion
@@ -69,7 +69,7 @@ const bindGroupLayout = tgpu.bindGroupLayout({
 // #region functions
 
 const getBoxIntersection = tgpu
-  .fn([vec3f, vec3f, RayStruct], IntersectionStruct)
+  .fn([d.vec3f, d.vec3f, RayStruct], IntersectionStruct)
   .does(
     /* wgsl */ `(
   boundMin: vec3f,
@@ -143,7 +143,7 @@ const getBoxIntersection = tgpu
   .$name("box_intersection");
 
 const getBox = tgpu
-  .fn([u32, u32, u32], IntersectionStruct)
+  .fn([d.u32, d.u32, d.u32], IntersectionStruct)
   .does(
     /* wgsl */ `(
   index: u32,
@@ -201,11 +201,11 @@ const vertexFunction = tgpu
   )
   .$name("vertex_main");
 
-const getGoalSlot = wgsl.slot<TgpuFn<[], U32>>();
-const getHighestSlot = wgsl.slot<TgpuFn<[], U32>>();
+const getGoalSlot = wgsl.slot<TgpuFn<[], d.U32>>();
+const getHighestSlot = wgsl.slot<TgpuFn<[], d.U32>>();
 
 const fragmentFunction = tgpu
-  .fragmentFn({ outPos: builtin.position }, vec4f)
+  .fragmentFn({ outPos: builtin.position }, d.vec4f)
   .does(
     /* wgsl */ `(@builtin(position) position: vec4f) -> @location(0) vec4f {
   let minDim = f32(min(canvasDims.width, canvasDims.height));
@@ -283,7 +283,7 @@ const fragmentFunction = tgpu
 export default function BoxesViz({
   goalBuffer,
 }: {
-  goalBuffer: TgpuBuffer<U32> & Uniform;
+  goalBuffer: TgpuBuffer<d.U32> & Uniform;
 }) {
   const [trackerState] = useContext(TrackerContext);
   const highestValue = useMemo(
@@ -297,7 +297,7 @@ export default function BoxesViz({
 
   // buffers
   const highestValueBuffer = useBuffer(
-    u32,
+    d.u32,
     highestValue,
     ["uniform"],
     "highest value"
@@ -308,7 +308,7 @@ export default function BoxesViz({
   );
 
   const cameraPositionBuffer = useBuffer(
-    vec3f,
+    d.vec3f,
     undefined,
     ["storage"],
     "camera_position"
@@ -328,7 +328,7 @@ export default function BoxesViz({
     "canvas_dims"
   );
 
-  const boxSizeBuffer = useBuffer(u32, MAX_BOX_SIZE, ["uniform"], "box_size");
+  const boxSizeBuffer = useBuffer(d.u32, MAX_BOX_SIZE, ["uniform"], "box_size");
 
   const goalUniform = useMemo(() => asUniform(goalBuffer), [goalBuffer]);
 
@@ -353,14 +353,14 @@ export default function BoxesViz({
         .with(
           getGoalSlot,
           tgpu
-            .fn([], u32)
+            .fn([], d.u32)
             .does(`() -> u32 { return goal; }`)
             .$uses({ goal: goalUniform })
         )
         .with(
           getHighestSlot,
           tgpu
-            .fn([], u32)
+            .fn([], d.u32)
             .does(`() -> u32 { return highest; }`)
             .$uses({ highest: highestValueUniform })
         )
@@ -382,7 +382,7 @@ export default function BoxesViz({
       height: context.canvas.height,
     });
 
-    const cameraPos = vec3f(
+    const cameraPos = d.vec3f(
       Math.cos(frameNum.current) * CAMERA_DISTANCE + BOX_CENTER.x,
       BOX_CENTER.y,
       Math.sin(frameNum.current) * CAMERA_DISTANCE + BOX_CENTER.z
@@ -399,9 +399,11 @@ export default function BoxesViz({
     frameNum.current += (ROTATION_SPEED * deltaTime) / 1000;
 
     // console.log("boxes");
+
+    const texture = context.getCurrentTexture();
     pipeline
       .withColorAttachment({
-        view: context.getCurrentTexture().createView(),
+        view: texture.createView(),
         clearValue: [1, 1, 1, 0],
         loadOp: "clear",
         storeOp: "store",
@@ -410,6 +412,7 @@ export default function BoxesViz({
 
     root.flush();
     context.present();
+    texture.destroy();
   };
 
   const isFocused = useIsFocused();

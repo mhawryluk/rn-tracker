@@ -1,17 +1,6 @@
 import { useCallback, useContext, useEffect, useMemo, useRef } from "react";
 import { Canvas } from "react-native-wgpu";
-import {
-  arrayOf,
-  bool,
-  f32,
-  i32,
-  struct,
-  u32,
-  vec2f,
-  vec2u,
-  vec4f,
-  type Infer,
-} from "typegpu/data";
+import * as d from "typegpu/data";
 import tgpu, {
   asMutable,
   asReadonly,
@@ -50,17 +39,17 @@ const obstacles: {
 
 // data structures
 
-const GridData = arrayOf(vec4f, MAX_GRID_SIZE ** 2);
-const BoxObstacle = struct({
-  center: vec2u,
-  size: vec2u,
-  enabled: u32,
+const GridData = d.arrayOf(d.vec4f, MAX_GRID_SIZE ** 2);
+const BoxObstacle = d.struct({
+  center: d.vec2u,
+  size: d.vec2u,
+  enabled: d.u32,
 });
-const BoxObstacleArray = arrayOf(BoxObstacle, MAX_OBSTACLES);
-const SourceParams = struct({
-  center: vec2f,
-  radius: f32,
-  intensity: f32,
+const BoxObstacleArray = d.arrayOf(BoxObstacle, MAX_OBSTACLES);
+const SourceParams = d.struct({
+  center: d.vec2f,
+  radius: d.f32,
+  intensity: d.f32,
 });
 
 type GridData = typeof GridData;
@@ -73,12 +62,12 @@ const inputGridSlot = wgsl.slot<
   TgpuBufferReadonly<GridData> | TgpuBufferMutable<GridData>
 >();
 
-const randSeed = wgsl.var(vec2f);
+const randSeed = wgsl.var(d.vec2f);
 
 // #region functions
 
 const setupRandomSeed = tgpu
-  .fn([vec2f])
+  .fn([d.vec2f])
   .does(
     /* wgsl */ `(coord: vec2f) {
     randSeed = coord;
@@ -87,7 +76,7 @@ const setupRandomSeed = tgpu
   .$uses({ randSeed });
 
 const rand01 = tgpu
-  .fn([], f32)
+  .fn([], d.f32)
   .does(
     /* wgsl */ `() -> f32 {
       let a = dot(randSeed, vec2f(23.14077926, 232.61690225));
@@ -97,10 +86,10 @@ const rand01 = tgpu
       return randSeed.y;
     }`
   )
-  .$uses({ std, vec2f, randSeed });
+  .$uses({ std, vec2f: d.vec2f, randSeed });
 
 const isValidCoord = tgpu
-  .fn([i32, i32], bool)
+  .fn([d.i32, d.i32], d.bool)
   .does(
     /* wgsl */ `(x: i32, y: i32) -> bool {
       return (x < gridSizeUniform &&
@@ -112,7 +101,7 @@ const isValidCoord = tgpu
   .$uses({ gridSizeUniform: GRID_SIZE });
 
 const coordsToIndex = tgpu
-  .fn([i32, i32], i32)
+  .fn([d.i32, d.i32], d.i32)
   .does(
     /* wgsl */ `(x: i32, y: i32) -> i32 { 
     return x + y * gridSizeUniform; 
@@ -121,7 +110,7 @@ const coordsToIndex = tgpu
   .$uses({ gridSizeUniform: GRID_SIZE });
 
 const getCell = tgpu
-  .fn([i32, i32], vec4f)
+  .fn([d.i32, d.i32], d.vec4f)
   .does(
     /* wgsl */ `(x: i32, y : i32) -> vec4f { 
       return inputGridSlot[coordsToIndex(x, y)];
@@ -130,7 +119,7 @@ const getCell = tgpu
   .$uses({ coordsToIndex, inputGridSlot });
 
 const setCell = tgpu
-  .fn([i32, i32, vec4f])
+  .fn([d.i32, d.i32, d.vec4f])
   .does(
     /* wgsl */ `(x: i32, y: i32, value: vec4f) {
     let index = coordsToIndex(x, y);
@@ -140,7 +129,7 @@ const setCell = tgpu
   .$uses({ coordsToIndex, outputGridSlot });
 
 const setVelocity = tgpu
-  .fn([i32, i32, vec2f])
+  .fn([d.i32, d.i32, d.vec2f])
   .does(
     /* wgsl */ `(x: i32, y: i32, velocity: vec2f) {
     let index = coordsToIndex(x, y);
@@ -151,7 +140,7 @@ const setVelocity = tgpu
   .$uses({ coordsToIndex, outputGridSlot });
 
 const addDensity = tgpu
-  .fn([i32, i32, f32])
+  .fn([d.i32, d.i32, d.f32])
   .does(
     /* wgsl */ `(x: i32, y: i32, density: f32) {
       let index = coordsToIndex(x, y);
@@ -161,7 +150,7 @@ const addDensity = tgpu
   .$uses({ coordsToIndex, outputGridSlot, inputGridSlot });
 
 const flowFromCell = tgpu
-  .fn([i32, i32, i32, i32], f32)
+  .fn([d.i32, d.i32, d.i32, d.i32], d.f32)
   .does(
     /* wgsl */ `(my_x: i32, my_y: i32, x: i32, y: i32) -> f32 {
       if (!isValidCoord(x, y)) {
@@ -195,7 +184,7 @@ const flowFromCell = tgpu
   .$name("flow_from_cell");
 
 const isInsideObstacle = tgpu
-  .fn([i32, i32], bool)
+  .fn([d.i32, d.i32], d.bool)
   .does(
     /* wgsl */ `(x: i32, y: i32) -> bool {
       for (var obs_idx = 0; obs_idx < MAX_OBSTACLES; obs_idx += 1) {
@@ -222,7 +211,7 @@ const isInsideObstacle = tgpu
   .$name("is_inside_obstacle");
 
 const isValidFlowOut = tgpu
-  .fn([i32, i32], bool)
+  .fn([d.i32, d.i32], d.bool)
   .does(
     /* wgsl */ `(x: i32, y: i32) -> bool {
       if (!isValidCoord(x, y)) {
@@ -241,7 +230,7 @@ const isValidFlowOut = tgpu
   .$uses({ isValidCoord, isInsideObstacle, getCell });
 
 const computeVelocity = tgpu
-  .fn([i32, i32], vec2f)
+  .fn([d.i32, d.i32], d.vec2f)
   .does(
     /* wgsl */ `(x: i32, y: i32) -> vec2f {
       let gravity_cost = 0.5;
@@ -434,7 +423,7 @@ const mainMoveObstacles = tgpu
   });
 
 const getMinimumInFlow = tgpu
-  .fn([i32, i32], f32)
+  .fn([d.i32, d.i32], d.f32)
   .does(
     /* wgsl */ `(x: i32, y: i32) -> f32 {
     let source_params = sourceParamsUniform;
@@ -493,7 +482,7 @@ const mainCompute = tgpu
 
 const vertexMain = tgpu.vertexFn(
   { idx: builtin.vertexIndex },
-  { pos: builtin.position, uv: vec2f }
+  { pos: builtin.position, uv: d.vec2f }
 ).does(/* wgsl */ `(@builtin(vertex_index) idx: u32) -> VertexOut {
       var pos = array<vec2f, 4>(
         vec2(1, 1), // top-right
@@ -519,9 +508,9 @@ const fragmentMain = tgpu
   .fragmentFn(
     {
       pos: builtin.position /* TODO: Remove once builtins are properly purged from the types */,
-      uv: vec2f,
+      uv: d.vec2f,
     },
-    vec4f
+    d.vec4f
   )
   .does(
     /* wgsl */ `(@location(0) uv: vec2f) -> @location(0) vec4f {
@@ -574,10 +563,13 @@ const fragmentMain = tgpu
 
 // #endregion
 
-function obstaclesToConcrete(): Infer<BoxObstacle>[] {
+function obstaclesToConcrete(): d.Infer<BoxObstacle>[] {
   return obstacles.map(({ x, y, width, height, enabled }) => ({
-    center: vec2u(Math.round(x * GRID_SIZE), Math.round(y * GRID_SIZE)),
-    size: vec2u(Math.round(width * GRID_SIZE), Math.round(height * GRID_SIZE)),
+    center: d.vec2u(Math.round(x * GRID_SIZE), Math.round(y * GRID_SIZE)),
+    size: d.vec2u(
+      Math.round(width * GRID_SIZE),
+      Math.round(height * GRID_SIZE)
+    ),
     enabled: enabled ? 1 : 0,
   }));
 }
@@ -609,7 +601,7 @@ export default function WaterViz() {
     [obstaclesBuffer]
   );
 
-  const timeBuffer = useBuffer(f32, undefined, ["uniform"]);
+  const timeBuffer = useBuffer(d.f32, undefined, ["uniform"]);
   const timeUniform = useMemo(() => asUniform(timeBuffer), [timeBuffer]);
 
   const sourceParamsBuffer = useBuffer(SourceParams, undefined, ["uniform"]);
@@ -667,7 +659,7 @@ export default function WaterViz() {
           root.flush();
         },
 
-        applyMovedObstacles(bufferData: Infer<BoxObstacle>[]) {
+        applyMovedObstacles(bufferData: d.Infer<BoxObstacle>[]) {
           obstaclesBuffer.write(bufferData);
           moveObstaclesPipeline.dispatchWorkgroups(1);
           root.flush();
@@ -727,7 +719,7 @@ export default function WaterViz() {
     timeBuffer.write(Date.now() % 1000);
 
     sourceParamsBuffer.write({
-      center: vec2f(0.5, 0.9),
+      center: d.vec2f(0.5, 0.9),
       intensity: sourceIntensity,
       radius: SOURCE_RADIUS,
     });
