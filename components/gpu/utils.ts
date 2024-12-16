@@ -5,6 +5,7 @@ import type { Infer, AnyData } from "typegpu/data";
 import { ExperimentalTgpuRoot } from "typegpu/experimental";
 
 import { RootContext } from "../context/RootContext";
+import { TgpuBuffer } from "typegpu";
 
 export function useRoot(): ExperimentalTgpuRoot {
   const root = useContext(RootContext);
@@ -53,8 +54,18 @@ export function useBuffer<T extends AnyData>(
   label?: string
 ) {
   const root = useRoot();
+  const bufferRef = useRef<TgpuBuffer<T>| null>();
+
   const buffer = useMemo(
-    () => root.createBuffer(schema, value).$usage(...usage).$name(label),
+    () => {
+      if (bufferRef.current) {
+        console.log("destroy buffer on new created");
+        bufferRef.current.destroy();
+      }
+      const buffer = root.createBuffer(schema, value).$usage(...usage).$name(label);
+      bufferRef.current = buffer;
+      return buffer;
+    },
     [root, schema, label, ...usage]
   );
 
@@ -63,6 +74,21 @@ export function useBuffer<T extends AnyData>(
       buffer.write(value);
     }
   }, [value]);
+
+  const cleanupRef = useRef<ReturnType<typeof setTimeout> | null>();
+
+  useEffect(() => {
+    if (cleanupRef.current !== null) {
+      clearTimeout(cleanupRef.current);
+    } 
+
+    return () => {
+      cleanupRef.current = setTimeout(() => {
+        console.log("destroy buffer on unmount");
+        buffer.destroy()
+      }, 1000);
+    }
+  }, [])
 
   return buffer;
 }
