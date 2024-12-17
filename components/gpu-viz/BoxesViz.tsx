@@ -412,7 +412,7 @@ export default function BoxesViz({
 
     root.flush();
     context.present();
-    texture.destroy();
+    // texture.destroy();
   };
 
   const isFocused = useIsFocused();

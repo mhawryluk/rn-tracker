@@ -289,7 +289,7 @@ export default function ConfettiViz() {
 
     root.flush();
     context.present();
-    texture.destroy();
+    // texture.destroy();
   };
 
   const isFocused = useIsFocused();

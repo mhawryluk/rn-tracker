@@ -163,7 +163,7 @@ export default function TilesViz({
 
     root.flush();
     context.present();
-    texture.destroy();
+    // texture.destroy();
   }, [context, valuesState, goalState]);
 
   return (
