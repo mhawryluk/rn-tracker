@@ -296,6 +296,7 @@ export default function BoxesViz({
   const { ref, context } = useGPUSetup(presentationFormat);
 
   // buffers
+
   const highestValueBuffer = useBuffer(
     d.u32,
     highestValue,
@@ -332,7 +333,7 @@ export default function BoxesViz({
 
   const goalUniform = useMemo(() => asUniform(goalBuffer), [goalBuffer]);
 
-  // bind groups and layouts
+  // bind groups
 
   const renderBindGroup = useMemo(
     () =>
@@ -398,8 +399,6 @@ export default function BoxesViz({
 
     frameNum.current += (ROTATION_SPEED * deltaTime) / 1000;
 
-    // console.log("boxes");
-
     const texture = context.getCurrentTexture();
     pipeline
       .withColorAttachment({
@@ -412,7 +411,7 @@ export default function BoxesViz({
 
     root.flush();
     context.present();
-    // texture.destroy();
+    texture.destroy();
   };
 
   const isFocused = useIsFocused();
