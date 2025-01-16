@@ -3,7 +3,7 @@ import { Canvas } from "react-native-wgpu";
 
 import { useIsFocused } from "@react-navigation/native";
 import * as d from "typegpu/data";
-import tgpu, { asMutable, asUniform, builtin } from "typegpu/experimental";
+import tgpu, { unstable_asMutable, unstable_asUniform } from "typegpu";
 import { useBuffer, useFrame, useGPUSetup, useRoot } from "../gpu/utils";
 
 // #region constants
@@ -22,7 +22,7 @@ const COLOR_PALETTE: d.v4f[] = [
 // #region data structures
 
 const VertexOutput = {
-  position: builtin.position,
+  position: d.builtin.position,
   color: d.vec4f,
 };
 
@@ -45,7 +45,7 @@ const ParticleDataArray = d.arrayOf(ParticleData, PARTICLE_AMOUNT);
 
 // #region functions
 
-const rotate = tgpu.fn([d.vec2f, d.f32], d.vec2f).does(/* wgsl */ `
+const rotate = tgpu["~unstable"].fn([d.vec2f, d.f32], d.vec2f).does(/* wgsl */ `
   (v: vec2f, angle: f32) -> vec2f {
     let pos = vec2(
       (v.x * cos(angle)) - (v.y * sin(angle)),
@@ -55,14 +55,14 @@ const rotate = tgpu.fn([d.vec2f, d.f32], d.vec2f).does(/* wgsl */ `
     return pos;
 }`);
 
-const mainVert = tgpu
+const mainVert = tgpu["~unstable"]
   .vertexFn(
     {
       tilt: d.f32,
       angle: d.f32,
       color: d.vec4f,
       center: d.vec2f,
-      index: builtin.vertexIndex,
+      index: d.builtin.vertexIndex,
     },
     VertexOutput
   )
@@ -95,14 +95,18 @@ const mainVert = tgpu
   )
   .$uses({ rotate });
 
-const mainFrag = tgpu.fragmentFn(VertexOutput, d.vec4f).does(/* wgsl */ `
+const mainFrag = tgpu["~unstable"].fragmentFn(VertexOutput, d.vec4f)
+  .does(/* wgsl */ `
   (@location(0) color: vec4f) -> @location(0) vec4f {
     return color;
 }`);
 
-const mainCompute = tgpu.computeFn([builtin.globalInvocationId], {
-  workgroupSize: [1],
-}).does(/* wgsl */ `(@builtin(global_invocation_id) gid: vec3u) {
+const mainCompute = tgpu["~unstable"].computeFn(
+  [d.builtin.globalInvocationId],
+  {
+    workgroupSize: [1],
+  }
+).does(/* wgsl */ `(@builtin(global_invocation_id) gid: vec3u) {
   let index = gid.x;
   if index == 0 {
     time += deltaTime;
@@ -115,12 +119,12 @@ const mainCompute = tgpu.computeFn([builtin.globalInvocationId], {
 
 // #region layouts
 
-const geometryLayout = tgpu.vertexLayout(
+const geometryLayout = tgpu["~unstable"].vertexLayout(
   (n: number) => d.arrayOf(ParticleGeometry, n),
   "instance"
 );
 
-const dataLayout = tgpu.vertexLayout(
+const dataLayout = tgpu["~unstable"].vertexLayout(
   (n: number) => d.arrayOf(ParticleData, n),
   "instance"
 );
@@ -143,7 +147,9 @@ export default function ConfettiViz() {
 
   const canvasAspectRatioUniform = useMemo(
     () =>
-      canvasAspectRatioBuffer ? asUniform(canvasAspectRatioBuffer) : undefined,
+      canvasAspectRatioBuffer
+        ? unstable_asUniform(canvasAspectRatioBuffer)
+        : undefined,
     [canvasAspectRatioBuffer]
   );
 
@@ -198,15 +204,15 @@ export default function ConfettiViz() {
   const timeBuffer = useBuffer(d.f32, undefined, ["storage"], "time");
 
   const particleDataStorage = useMemo(
-    () => asMutable(particleDataBuffer),
+    () => unstable_asMutable(particleDataBuffer),
     [particleDataBuffer]
   );
   const deltaTimeUniform = useMemo(
-    () => (deltaTimeBuffer ? asUniform(deltaTimeBuffer) : undefined),
+    () => (deltaTimeBuffer ? unstable_asUniform(deltaTimeBuffer) : undefined),
     [deltaTimeBuffer]
   );
   const timeStorage = useMemo(
-    () => (timeBuffer ? asMutable(timeBuffer) : timeBuffer),
+    () => (timeBuffer ? unstable_asMutable(timeBuffer) : timeBuffer),
     [timeBuffer]
   );
 
@@ -214,7 +220,7 @@ export default function ConfettiViz() {
 
   const renderPipeline = useMemo(
     () =>
-      root
+      root["~unstable"]
         .withVertex(
           mainVert.$uses({
             canvasAspectRatio: canvasAspectRatioUniform,
@@ -240,7 +246,7 @@ export default function ConfettiViz() {
 
   const computePipeline = useMemo(
     () =>
-      root
+      root["~unstable"]
         .withCompute(
           mainCompute.$uses({
             particleData: particleDataStorage,
@@ -287,7 +293,7 @@ export default function ConfettiViz() {
       })
       .draw(4, PARTICLE_AMOUNT);
 
-    root.flush();
+    root["~unstable"].flush();
     context.present();
     // texture.destroy();
   };

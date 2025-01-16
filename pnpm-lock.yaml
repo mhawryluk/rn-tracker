@@ -66,8 +66,8 @@ importers:
         specifier: 0.1.21
         version: 0.1.21(react-native@0.76.2(@babel/core@7.26.0)(@babel/preset-env@7.26.0(@babel/core@7.26.0))(@react-native-community/cli-server-api@14.1.0)(@types/react@18.3.12)(react@18.3.1))(react@18.3.1)
       typegpu:
-        specifier: https://pkg.csb.dev/software-mansion/TypeGPU/commit/5742263c/typegpu
-        version: https://pkg.csb.dev/software-mansion/TypeGPU/commit/5742263c/typegpu
+        specifier: ^0.3.2
+        version: 0.3.2
     devDependencies:
       '@babel/core':
         specifier: ^7.25.2
@@ -4103,9 +4103,11 @@ packages:
 
   sudo-prompt@8.2.5:
     resolution: {integrity: sha512-rlBo3HU/1zAJUrkY6jNxDOC9eVYliG6nS4JA8u8KAshITd07tafMc/Br7xQwCSseXwJ2iCcHCE8SNWX3q8Z+kw==}
+    deprecated: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
 
   sudo-prompt@9.1.1:
     resolution: {integrity: sha512-es33J1g2HjMpyAhz8lOR+ICmXXAqTuKbuXuUWLhOLew20oN9oUCgCJx615U/v7aioZg7IX5lIh9x34vwneu4pA==}
+    deprecated: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
 
   supports-color@5.5.0:
     resolution: {integrity: sha512-QjVjwdXIt408MIiAqCX4oUKsgU2EqAGzs2Ppkm4aQYbjm+ZEWEcW4SfFNTr4uMNZma0ey4f5lgLrkB0aX0QMow==}
@@ -4195,8 +4197,8 @@ packages:
   through@2.3.8:
     resolution: {integrity: sha512-w89qg7PI8wAdvX60bMDP+bFoD5Dvhm9oLheFp5O4a2QF0cSBGsBX4qZmadPMvVqlLJBBci+WqGGOAPvcDeNSVg==}
 
-  tinyest@0.0.0:
-    resolution: {integrity: sha512-rCvaLewct/tm5CVLMdoa6xKNHWxT60AwhrmF7mjtkhj8w8VCeAg44NB2bzohEfN1SzfPCSyuB8GMmC/BV2gyjw==}
+  tinyest@0.1.0-alpha.1:
+    resolution: {integrity: sha512-rTi8MVYhCYxWnk1D3EORy3Dmy0k7QL6ihSK4qA74I4vkGvUkkIaqOzZatkD6fag/yMF3MJYsb1hmEZuoliizgA==}
     engines: {node: '>=12.20.0'}
 
   tmp@0.0.33:
@@ -4250,12 +4252,11 @@ packages:
     resolution: {integrity: sha512-Ne2YiiGN8bmrmJJEuTWTLJR32nh/JdL1+PSicowtNb0WFpn59GK8/lfD61bVtzguz7b3PBt74nxpv/Pw5po5Rg==}
     engines: {node: '>=8'}
 
-  typed-binary@4.2.0:
-    resolution: {integrity: sha512-K8lXyQUAk095YkIkFqV929+epoQqxB0lsx9TBd1mb79565eVWXIRa7emCArRajH+g5nYa3t/ZoaSQIl0RDQMsQ==}
+  typed-binary@4.3.1:
+    resolution: {integrity: sha512-yLoFov7uL+PItmyqbxcP8HnEm7R1wkzzTe2rkX1h+HDPZQIKGRJkfSd3egE0itPXxubPpQ9lTdko+zzjOCIXOA==}
 
-  typegpu@https://pkg.csb.dev/software-mansion/TypeGPU/commit/5742263c/typegpu:
-    resolution: {tarball: https://pkg.csb.dev/software-mansion/TypeGPU/commit/5742263c/typegpu}
-    version: 0.2.0
+  typegpu@0.3.2:
+    resolution: {integrity: sha512-RB3I/oqwTaf5R4aGJ5nHJkTCt3mfPg7p8NBmSJd8h8UlBwbld/7C2+FdK1d6J4ah3NXGcq4plmh5m+hTybH/VQ==}
     engines: {node: '>=12.20.0'}
 
   typescript@5.3.3:
@@ -9813,7 +9814,7 @@ snapshots:
 
   through@2.3.8: {}
 
-  tinyest@0.0.0: {}
+  tinyest@0.1.0-alpha.1: {}
 
   tmp@0.0.33:
     dependencies:
@@ -9854,12 +9855,12 @@ snapshots:
 
   type-fest@0.7.1: {}
 
-  typed-binary@4.2.0: {}
+  typed-binary@4.3.1: {}
 
-  typegpu@https://pkg.csb.dev/software-mansion/TypeGPU/commit/5742263c/typegpu:
+  typegpu@0.3.2:
     dependencies:
-      tinyest: 0.0.0
-      typed-binary: 4.2.0
+      tinyest: 0.1.0-alpha.1
+      typed-binary: 4.3.1
 
   typescript@5.3.3: {}
 

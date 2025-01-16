@@ -2,14 +2,12 @@ import { useContext, useEffect, useMemo } from "react";
 import { Canvas } from "react-native-wgpu";
 import * as d from "typegpu/data";
 import tgpu, {
-  asReadonly,
-  asUniform,
-  builtin,
+  unstable_asReadonly,
+  unstable_asUniform,
   TgpuBuffer,
   TgpuFn,
   Uniform,
-  wgsl,
-} from "typegpu/experimental";
+} from "typegpu";
 
 import { GoalContext } from "../context/GoalContext";
 import { TrackerContext } from "../context/TrackerContext";
@@ -18,10 +16,10 @@ import { useBuffer, useGPUSetup, useRoot } from "../gpu/utils";
 const SPAN_X = 7;
 const SPAN_Y = 6;
 
-export const mainVert = tgpu.vertexFn(
-  { vertexIndex: builtin.vertexIndex },
+export const mainVert = tgpu["~unstable"].vertexFn(
+  { vertexIndex: d.builtin.vertexIndex },
   {
-    pos: builtin.position,
+    pos: d.builtin.position,
     uv: d.vec2f,
   }
 ).does(/* wgsl */ `(@builtin(vertex_index) vertexIndex: u32) -> Output {
@@ -45,11 +43,11 @@ export const mainVert = tgpu.vertexFn(
     return out;
   }`);
 
-const getLimitSlot = wgsl.slot<TgpuFn<[], d.U32>>();
-const getValuesSlot = wgsl.slot<TgpuFn<[], d.TgpuArray<d.I32>>>();
+const getLimitSlot = tgpu["~unstable"].slot<TgpuFn<[], d.U32>>();
+const getValuesSlot = tgpu["~unstable"].slot<TgpuFn<[], d.TgpuArray<d.I32>>>();
 
-export const mainFrag = tgpu
-  .fragmentFn({ uv: d.vec2f, pos: builtin.position }, d.vec4f)
+export const mainFrag = tgpu["~unstable"]
+  .fragmentFn({ uv: d.vec2f, pos: d.builtin.position }, d.vec4f)
   .does(
     /* wgsl */ `(@location(0) uv: vec2f) -> @location(0) vec4f {
     let limit = getLimitSlot();
@@ -121,20 +119,24 @@ export default function TilesViz({
 
   const pipeline = useMemo(
     () =>
-      root
+      root["~unstable"]
         .with(
           getLimitSlot,
-          tgpu
+          tgpu["~unstable"]
             .fn([], d.u32)
             .does(`() -> u32 { return limit; }`)
-            .$uses({ limit: asUniform(goalBuffer) })
+            .$uses({ limit: unstable_asUniform(goalBuffer) })
         )
         .with(
           getValuesSlot,
-          tgpu
+          tgpu["~unstable"]
             .fn([], d.arrayOf(d.i32, SPAN_X * SPAN_Y))
             .does(`() -> array<i32, SPAN_X * SPAN_Y> { return values; }`)
-            .$uses({ values: asReadonly(valuesBuffer), SPAN_X, SPAN_Y })
+            .$uses({
+              values: unstable_asReadonly(valuesBuffer),
+              SPAN_X,
+              SPAN_Y,
+            })
         )
         .withVertex(mainVert, {})
         .withFragment(mainFrag, { format: presentationFormat })
@@ -161,7 +163,7 @@ export default function TilesViz({
       })
       .draw(4);
 
-    root.flush();
+    root["~unstable"].flush();
     context.present();
   }, [context, valuesState, goalState]);
 

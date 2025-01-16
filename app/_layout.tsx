@@ -6,7 +6,6 @@ import {
 import { Stack } from "expo-router";
 import React, { useMemo, useState } from "react";
 import "react-native-reanimated";
-import { Text } from "react-native";
 
 import { GoalContext } from "@/components/context/GoalContext";
 import { RootContext } from "@/components/context/RootContext";
@@ -14,7 +13,7 @@ import { TrackerContext } from "@/components/context/TrackerContext";
 import { useColorScheme } from "@/components/useColorScheme";
 import Colors from "@/constants/Colors";
 import { useDevice } from "react-native-wgpu";
-import tgpu from "typegpu/experimental";
+import tgpu from "typegpu";
 import ConfettiViz from "@/components/gpu-viz/ConfettiViz";
 
 export {

@@ -1,6 +1,4 @@
 import { createContext } from "react";
-import { ExperimentalTgpuRoot } from "typegpu/experimental";
+import { TgpuRoot } from "typegpu";
 
-export const RootContext = createContext<
-  ExperimentalTgpuRoot | null
->(null);
+export const RootContext = createContext<TgpuRoot | null>(null);

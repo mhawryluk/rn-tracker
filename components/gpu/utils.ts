@@ -1,13 +1,20 @@
-import { useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { PixelRatio } from "react-native";
 import { RNCanvasContext, useCanvasEffect } from "react-native-wgpu";
 import type { Infer, AnyData } from "typegpu/data";
-import { ExperimentalTgpuRoot } from "typegpu/experimental";
 
 import { RootContext } from "../context/RootContext";
-import { TgpuBuffer } from "typegpu";
+import type { TgpuBuffer, TgpuRoot } from "typegpu";
 
-export function useRoot(): ExperimentalTgpuRoot {
+export function useRoot(): TgpuRoot {
   const root = useContext(RootContext);
 
   if (root === null) {
@@ -15,7 +22,6 @@ export function useRoot(): ExperimentalTgpuRoot {
   }
   return root;
 }
-
 
 export function useGPUSetup(
   presentationFormat: GPUTextureFormat = navigator.gpu.getPreferredCanvasFormat()
@@ -54,20 +60,21 @@ export function useBuffer<T extends AnyData>(
   label?: string
 ) {
   const root = useRoot();
-  const bufferRef = useRef<TgpuBuffer<T>| null>();
+  const bufferRef = useRef<TgpuBuffer<T> | null>();
 
-  const buffer = useMemo(
-    () => {
-      if (bufferRef.current) {
-        console.log("destroy buffer on new created");
-        bufferRef.current.destroy();
-      }
-      const buffer = root.createBuffer(schema, value).$usage(...usage).$name(label);
-      bufferRef.current = buffer;
-      return buffer;
-    },
-    [root, schema, label, ...usage]
-  );
+  const buffer = useMemo(() => {
+    if (bufferRef.current) {
+      console.log("destroy buffer on new created");
+      bufferRef.current.destroy();
+    }
+    const buffer = root
+      .createBuffer(schema, value)
+      //@ts-ignore
+      .$usage(...usage)
+      .$name(label);
+    bufferRef.current = buffer;
+    return buffer;
+  }, [root, schema, label, ...usage]);
 
   useLayoutEffect(() => {
     if (value !== undefined && buffer && !buffer.destroyed) {
@@ -80,21 +87,21 @@ export function useBuffer<T extends AnyData>(
   useEffect(() => {
     if (cleanupRef.current !== null) {
       clearTimeout(cleanupRef.current);
-    } 
+    }
 
     return () => {
       cleanupRef.current = setTimeout(() => {
         console.log("destroy buffer on unmount");
-        buffer.destroy()
+        buffer.destroy();
       }, 1000);
-    }
-  }, [])
+    };
+  }, []);
 
   return buffer;
 }
 
 function useEvent<TFunction extends (...params: any[]) => any>(
-  handler: TFunction,
+  handler: TFunction
 ) {
   const handlerRef = useRef(handler);
 
@@ -108,11 +115,14 @@ function useEvent<TFunction extends (...params: any[]) => any>(
   }, []) as TFunction;
 }
 
-export function useFrame(loop: (deltaTime: number) => unknown, isRunning = true) {
+export function useFrame(
+  loop: (deltaTime: number) => unknown,
+  isRunning = true
+) {
   const loopEvent = useEvent(loop);
   useEffect(() => {
     if (!isRunning) {
-      return
+      return;
     }
 
     let lastTime = Date.now();
@@ -128,8 +138,7 @@ export function useFrame(loop: (deltaTime: number) => unknown, isRunning = true)
     let frame = requestAnimationFrame(runner);
 
     return () => {
-      console.log("disposing animation"),
-      cancelAnimationFrame(frame);
-    }
+      console.log("disposing animation"), cancelAnimationFrame(frame);
+    };
   }, [loopEvent, isRunning]);
 }

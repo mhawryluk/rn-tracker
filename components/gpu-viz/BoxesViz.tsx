@@ -2,15 +2,8 @@ import { useIsFocused } from "@react-navigation/native";
 import React, { useContext, useMemo, useRef } from "react";
 import { Canvas } from "react-native-wgpu";
 import * as d from "typegpu/data";
-import tgpu, {
-  asUniform,
-  builtin,
-  std,
-  TgpuBuffer,
-  TgpuFn,
-  Uniform,
-  wgsl,
-} from "typegpu/experimental";
+import tgpu, { unstable_asUniform, TgpuBuffer, TgpuFn, Uniform } from "typegpu";
+import * as std from "typegpu/std";
 
 import { TrackerContext } from "../context/TrackerContext";
 import { useBuffer, useFrame, useGPUSetup, useRoot } from "../gpu/utils";
@@ -68,7 +61,7 @@ const bindGroupLayout = tgpu.bindGroupLayout({
 
 // #region functions
 
-const getBoxIntersection = tgpu
+const getBoxIntersection = tgpu["~unstable"]
   .fn([d.vec3f, d.vec3f, RayStruct], IntersectionStruct)
   .does(
     /* wgsl */ `(
@@ -142,7 +135,7 @@ const getBoxIntersection = tgpu
   .$uses({ RayStruct, IntersectionStruct })
   .$name("box_intersection");
 
-const getBox = tgpu
+const getBox = tgpu["~unstable"]
   .fn([d.u32, d.u32, d.u32], IntersectionStruct)
   .does(
     /* wgsl */ `(
@@ -181,8 +174,11 @@ const getBox = tgpu
   .$uses({ BoxStruct })
   .$name("box_intersection");
 
-const vertexFunction = tgpu
-  .vertexFn({ vertexIndex: builtin.vertexIndex }, { outPos: builtin.position })
+const vertexFunction = tgpu["~unstable"]
+  .vertexFn(
+    { vertexIndex: d.builtin.vertexIndex },
+    { outPos: d.builtin.position }
+  )
   .does(
     /* wgsl */ `(@builtin(vertex_index) vertexIndex: u32) -> VertexOutput {
   var pos = array<vec2f, 6>(
@@ -201,11 +197,11 @@ const vertexFunction = tgpu
   )
   .$name("vertex_main");
 
-const getGoalSlot = wgsl.slot<TgpuFn<[], d.U32>>();
-const getHighestSlot = wgsl.slot<TgpuFn<[], d.U32>>();
+const getGoalSlot = tgpu["~unstable"].slot<TgpuFn<[], d.U32>>();
+const getHighestSlot = tgpu["~unstable"].slot<TgpuFn<[], d.U32>>();
 
-const fragmentFunction = tgpu
-  .fragmentFn({ outPos: builtin.position }, d.vec4f)
+const fragmentFunction = tgpu["~unstable"]
+  .fragmentFn({ outPos: d.builtin.position }, d.vec4f)
   .does(
     /* wgsl */ `(@builtin(position) position: vec4f) -> @location(0) vec4f {
   let minDim = f32(min(canvasDims.width, canvasDims.height));
@@ -304,7 +300,7 @@ export default function BoxesViz({
     "highest value"
   );
   const highestValueUniform = useMemo(
-    () => asUniform(highestValueBuffer),
+    () => unstable_asUniform(highestValueBuffer),
     [highestValueBuffer]
   );
 
@@ -331,7 +327,10 @@ export default function BoxesViz({
 
   const boxSizeBuffer = useBuffer(d.u32, MAX_BOX_SIZE, ["uniform"], "box_size");
 
-  const goalUniform = useMemo(() => asUniform(goalBuffer), [goalBuffer]);
+  const goalUniform = useMemo(
+    () => unstable_asUniform(goalBuffer),
+    [goalBuffer]
+  );
 
   // bind groups
 
@@ -350,17 +349,17 @@ export default function BoxesViz({
 
   const pipeline = useMemo(
     () =>
-      root
+      root["~unstable"]
         .with(
           getGoalSlot,
-          tgpu
+          tgpu["~unstable"]
             .fn([], d.u32)
             .does(`() -> u32 { return goal; }`)
             .$uses({ goal: goalUniform })
         )
         .with(
           getHighestSlot,
-          tgpu
+          tgpu["~unstable"]
             .fn([], d.u32)
             .does(`() -> u32 { return highest; }`)
             .$uses({ highest: highestValueUniform })
@@ -409,7 +408,7 @@ export default function BoxesViz({
       })
       .draw(6);
 
-    root.flush();
+    root["~unstable"].flush();
     context.present();
     texture.destroy();
   };
