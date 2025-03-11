@@ -1,11 +1,11 @@
-import { StatusBar } from "expo-status-bar";
-import { Platform, Pressable, StyleSheet, TextInput } from "react-native";
+import { StatusBar } from 'expo-status-bar';
+import { Platform, Pressable, StyleSheet, TextInput } from 'react-native';
 
-import { GoalContext } from "@/components/context/GoalContext";
-import { TrackerContext } from "@/components/context/TrackerContext";
-import { Text, View } from "@/components/Themed";
-import Colors from "@/constants/Colors";
-import { useContext } from "react";
+import { Text, View } from '@/components/Themed';
+import { GoalContext } from '@/components/context/GoalContext';
+import { TrackerContext } from '@/components/context/TrackerContext';
+import Colors from '@/constants/Colors';
+import { useContext } from 'react';
 
 export default function SettingsModal() {
   const [goalState, setGoalState] = useContext(GoalContext);
@@ -41,7 +41,7 @@ export default function SettingsModal() {
         )}
       </Pressable>
 
-      <StatusBar style={Platform.OS === "ios" ? "light" : "auto"} />
+      <StatusBar style={Platform.OS === 'ios' ? 'light' : 'auto'} />
     </View>
   );
 }
@@ -49,27 +49,27 @@ export default function SettingsModal() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
     gap: 20,
   },
 
   title: {
     fontSize: 20,
-    fontWeight: "bold",
-    color: "white",
+    fontWeight: 'bold',
+    color: 'white',
   },
 
   separator: {
     marginVertical: 30,
     height: 1,
-    width: "80%",
+    width: '80%',
   },
 
   row: {
-    justifyContent: "center",
-    alignItems: "center",
-    flexDirection: "row",
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexDirection: 'row',
     gap: 20,
     backgroundColor: Colors.light.lightTint,
     borderRadius: 15,
@@ -78,8 +78,8 @@ const styles = StyleSheet.create({
 
   text: {
     fontSize: 20,
-    fontWeight: "bold",
-    color: "white",
+    fontWeight: 'bold',
+    color: 'white',
   },
 
   button: {
@@ -87,6 +87,6 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     padding: 15,
     fontSize: 15,
-    color: "white",
+    color: 'white',
   },
 });

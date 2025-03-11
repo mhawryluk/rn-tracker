@@ -1,10 +1,10 @@
-import { useMemo, useState } from "react";
-import { Canvas } from "react-native-wgpu";
+import { useMemo, useState } from 'react';
+import { Canvas } from 'react-native-wgpu';
 
-import { useIsFocused } from "@react-navigation/native";
-import * as d from "typegpu/data";
-import tgpu, { unstable_asMutable, unstable_asUniform } from "typegpu";
-import { useBuffer, useFrame, useGPUSetup, useRoot } from "../gpu/utils";
+import { useIsFocused } from '@react-navigation/native';
+import tgpu from 'typegpu';
+import * as d from 'typegpu/data';
+import { useBuffer, useFrame, useGPUSetup, useRoot } from '../gpu/utils';
 
 // #region constants
 
@@ -45,7 +45,7 @@ const ParticleDataArray = d.arrayOf(ParticleData, PARTICLE_AMOUNT);
 
 // #region functions
 
-const rotate = tgpu["~unstable"].fn([d.vec2f, d.f32], d.vec2f).does(/* wgsl */ `
+const rotate = tgpu['~unstable'].fn([d.vec2f, d.f32], d.vec2f).does(/* wgsl */ `
   (v: vec2f, angle: f32) -> vec2f {
     let pos = vec2(
       (v.x * cos(angle)) - (v.y * sin(angle)),
@@ -55,34 +55,28 @@ const rotate = tgpu["~unstable"].fn([d.vec2f, d.f32], d.vec2f).does(/* wgsl */ `
     return pos;
 }`);
 
-const mainVert = tgpu["~unstable"]
-  .vertexFn(
-    {
+const mainVert = tgpu['~unstable']
+  .vertexFn({
+    in: {
       tilt: d.f32,
       angle: d.f32,
       color: d.vec4f,
       center: d.vec2f,
       index: d.builtin.vertexIndex,
     },
-    VertexOutput
-  )
+    out: VertexOutput,
+  })
   .does(
-    /* wgsl */ `(
-      @location(0) tilt: f32,
-      @location(1) angle: f32,
-      @location(2) color: vec4f,
-      @location(3) center: vec2f,
-      @builtin(vertex_index) index: u32,
-    ) -> VertexOutput {
-      let width = tilt;
-      let height = tilt / 2;
+    /* wgsl */ `(in: VertexInput) -> VertexOutput {
+      let width = in.tilt;
+      let height = in.tilt / 2;
 
       var pos = rotate(array<vec2f, 4>(
         vec2f(0, 0),
         vec2f(width, 0),
         vec2f(0, height),
         vec2f(width, height),
-      )[index] / 350, angle) + center;
+      )[in.index] / 350, in.angle) + in.center;
 
       if (canvasAspectRatio < 1) {
         pos.x /= canvasAspectRatio;
@@ -90,24 +84,28 @@ const mainVert = tgpu["~unstable"]
         pos.y *= canvasAspectRatio;
       }
 
-      return VertexOutput(vec4f(pos, 0.0, 1.0), color);
-  }`
+      return VertexOutput(vec4f(pos, 0.0, 1.0), in.color);
+  }`,
   )
   .$uses({ rotate });
 
-const mainFrag = tgpu["~unstable"].fragmentFn(VertexOutput, d.vec4f)
+const mainFrag = tgpu['~unstable']
+  .fragmentFn({
+    in: VertexOutput,
+    out: d.vec4f,
+  })
   .does(/* wgsl */ `
-  (@location(0) color: vec4f) -> @location(0) vec4f {
-    return color;
+  (in: FragmentIn) -> @location(0) vec4f {
+    return in.color;
 }`);
 
-const mainCompute = tgpu["~unstable"].computeFn(
-  [d.builtin.globalInvocationId],
-  {
+const mainCompute = tgpu['~unstable']
+  .computeFn({
+    in: { gid: d.builtin.globalInvocationId },
     workgroupSize: [1],
-  }
-).does(/* wgsl */ `(@builtin(global_invocation_id) gid: vec3u) {
-  let index = gid.x;
+  })
+  .does(/* wgsl */ `(in: ComputeIn: vec3u) {
+  let index = in.gid.x;
   if index == 0 {
     time += deltaTime;
   }
@@ -119,14 +117,14 @@ const mainCompute = tgpu["~unstable"].computeFn(
 
 // #region layouts
 
-const geometryLayout = tgpu["~unstable"].vertexLayout(
+const geometryLayout = tgpu.vertexLayout(
   (n: number) => d.arrayOf(ParticleGeometry, n),
-  "instance"
+  'instance',
 );
 
-const dataLayout = tgpu["~unstable"].vertexLayout(
+const dataLayout = tgpu.vertexLayout(
   (n: number) => d.arrayOf(ParticleData, n),
-  "instance"
+  'instance',
 );
 
 // #endregion
@@ -141,16 +139,15 @@ export default function ConfettiViz() {
   const canvasAspectRatioBuffer = useBuffer(
     d.f32,
     context ? context.canvas.width / context.canvas.height : 1,
-    ["uniform"],
-    "aspect_ratio"
-  );
+    'aspect_ratio',
+  ).$usage('uniform');
 
   const canvasAspectRatioUniform = useMemo(
     () =>
       canvasAspectRatioBuffer
-        ? unstable_asUniform(canvasAspectRatioBuffer)
+        ? canvasAspectRatioBuffer.as('uniform')
         : undefined,
-    [canvasAspectRatioBuffer]
+    [canvasAspectRatioBuffer],
   );
 
   const particleGeometry = useMemo(
@@ -163,15 +160,14 @@ export default function ConfettiViz() {
           color:
             COLOR_PALETTE[Math.floor(Math.random() * COLOR_PALETTE.length)],
         })),
-    []
+    [],
   );
 
   const particleGeometryBuffer = useBuffer(
     ParticleGeometryArray,
     particleGeometry,
-    ["vertex"],
-    "particle_geometry"
-  );
+    'particle_geometry',
+  ).$usage('vertex');
 
   const particleInitialData = useMemo(
     () =>
@@ -181,46 +177,42 @@ export default function ConfettiViz() {
           position: d.vec2f(Math.random() * 2 - 1, Math.random() * 2 + 1),
           velocity: d.vec2f(
             (Math.random() * 2 - 1) / 50,
-            -(Math.random() / 25 + 0.01)
+            -(Math.random() / 25 + 0.01),
           ),
           seed: Math.random(),
         })),
-    []
+    [],
   );
 
   const particleDataBuffer = useBuffer(
     ParticleDataArray,
     particleInitialData,
-    ["storage", "uniform", "vertex"],
-    "particle_data"
-  );
+    'particle_data',
+  ).$usage('storage', 'uniform', 'vertex');
 
-  const deltaTimeBuffer = useBuffer(
-    d.f32,
-    undefined,
-    ["uniform"],
-    "delta_time"
+  const deltaTimeBuffer = useBuffer(d.f32, undefined, 'delta_time').$usage(
+    'uniform',
   );
-  const timeBuffer = useBuffer(d.f32, undefined, ["storage"], "time");
+  const timeBuffer = useBuffer(d.f32, undefined, 'time').$usage('storage');
 
   const particleDataStorage = useMemo(
-    () => unstable_asMutable(particleDataBuffer),
-    [particleDataBuffer]
+    () => particleDataBuffer.as('mutable'),
+    [particleDataBuffer],
   );
   const deltaTimeUniform = useMemo(
-    () => (deltaTimeBuffer ? unstable_asUniform(deltaTimeBuffer) : undefined),
-    [deltaTimeBuffer]
+    () => (deltaTimeBuffer ? deltaTimeBuffer.as('uniform') : undefined),
+    [deltaTimeBuffer],
   );
   const timeStorage = useMemo(
-    () => (timeBuffer ? unstable_asMutable(timeBuffer) : timeBuffer),
-    [timeBuffer]
+    () => (timeBuffer ? timeBuffer.as('mutable') : timeBuffer),
+    [timeBuffer],
   );
 
   // pipelines
 
   const renderPipeline = useMemo(
     () =>
-      root["~unstable"]
+      root['~unstable']
         .withVertex(
           mainVert.$uses({
             canvasAspectRatio: canvasAspectRatioUniform,
@@ -230,32 +222,38 @@ export default function ConfettiViz() {
             angle: geometryLayout.attrib.angle,
             color: geometryLayout.attrib.color,
             center: dataLayout.attrib.position,
-          }
+          },
         )
         .withFragment(mainFrag, {
           format: presentationFormat,
         })
         .withPrimitive({
-          topology: "triangle-strip",
+          topology: 'triangle-strip',
         })
         .createPipeline()
         .with(geometryLayout, particleGeometryBuffer)
         .with(dataLayout, particleDataBuffer),
-    []
+    [
+      canvasAspectRatioUniform,
+      particleDataBuffer,
+      particleGeometryBuffer,
+      presentationFormat,
+      root,
+    ],
   );
 
   const computePipeline = useMemo(
     () =>
-      root["~unstable"]
+      root['~unstable']
         .withCompute(
           mainCompute.$uses({
             particleData: particleDataStorage,
             deltaTime: deltaTimeUniform,
             time: timeStorage,
-          })
+          }),
         )
         .createPipeline(),
-    []
+    [deltaTimeUniform, particleDataStorage, root, timeStorage],
   );
 
   const [ended, setEnded] = useState(false);
@@ -275,27 +273,25 @@ export default function ConfettiViz() {
         (particle) =>
           particle.position.x < -1 ||
           particle.position.x > 1 ||
-          particle.position.y < -1.5
+          particle.position.y < -1.5,
       )
     ) {
-      console.log("confetti animation ended");
+      console.log('confetti animation ended');
       setEnded(true);
     }
 
-    // console.log("draw confetti");
     const texture = context.getCurrentTexture();
     renderPipeline
       .withColorAttachment({
         view: texture.createView(),
         clearValue: [0, 0, 0, 0],
-        loadOp: "clear" as const,
-        storeOp: "store" as const,
+        loadOp: 'clear' as const,
+        storeOp: 'store' as const,
       })
       .draw(4, PARTICLE_AMOUNT);
 
-    root["~unstable"].flush();
+    root['~unstable'].flush();
     context.present();
-    // texture.destroy();
   };
 
   const isFocused = useIsFocused();
@@ -306,12 +302,12 @@ export default function ConfettiViz() {
       transparent
       ref={ref}
       style={{
-        position: "absolute",
-        width: "100%",
-        height: "100%",
+        position: 'absolute',
+        width: '100%',
+        height: '100%',
         zIndex: 20,
-        pointerEvents: "none",
-        cursor: "auto",
+        pointerEvents: 'none',
+        cursor: 'auto',
       }}
     />
   );

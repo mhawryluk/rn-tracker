@@ -1,18 +1,12 @@
-import {
-  Pressable,
-  StyleSheet,
-  useColorScheme,
-  Text,
-  Dimensions,
-} from "react-native";
+import { Pressable, StyleSheet, Text, useColorScheme } from 'react-native';
 
-import { View } from "@/components/Themed";
-import { useContext } from "react";
-import { TrackerContext } from "../../components/context/TrackerContext";
-import Colors from "../../constants/Colors";
-import { FontAwesome } from "@expo/vector-icons";
-import { GoalContext } from "@/components/context/GoalContext";
-import WaterViz from "@/components/gpu-viz/WaterViz";
+import { View } from '@/components/Themed';
+import { GoalContext } from '@/components/context/GoalContext';
+import WaterViz from '@/components/gpu-viz/WaterViz';
+import { FontAwesome } from '@expo/vector-icons';
+import { useContext } from 'react';
+import { TrackerContext } from '../../components/context/TrackerContext';
+import Colors from '../../constants/Colors';
 
 function TrackerVizPanel() {
   return (
@@ -34,11 +28,11 @@ function TrackerInputPanel() {
         <FontAwesome
           name="glass"
           size={50}
-          color={Colors[colorScheme ?? "light"].button}
+          color={Colors[colorScheme ?? 'light'].button}
           style={{
-            verticalAlign: "middle",
-            textAlign: "center",
-            alignItems: "center",
+            verticalAlign: 'middle',
+            textAlign: 'center',
+            alignItems: 'center',
           }}
         />
 
@@ -89,7 +83,7 @@ export default function TrackerScreen() {
   return (
     <View style={styles.container}>
       <TrackerVizPanel />
-      <View style={{ width: "100%", alignItems: "center", gap: 40 }}>
+      <View style={{ width: '100%', alignItems: 'center', gap: 40 }}>
         <Text style={styles.boldText}>
           Today's count: {trackerState[trackerState.length - 1]}/{goalState}
         </Text>
@@ -102,8 +96,8 @@ export default function TrackerScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: "center",
-    justifyContent: "flex-end",
+    alignItems: 'center',
+    justifyContent: 'flex-end',
     padding: 20,
     paddingTop: 0,
     gap: 50,
@@ -111,24 +105,24 @@ const styles = StyleSheet.create({
 
   input: {
     padding: 30,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
     backgroundColor: Colors.light.lightTint,
     borderRadius: 20,
-    width: "100%",
+    width: '100%',
   },
 
   vizPanel: {
     flex: 1,
-    justifyContent: "center",
+    justifyContent: 'center',
   },
 
   viz: {
-    width: "80%",
+    width: '80%',
     aspectRatio: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    overflow: "hidden",
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
     gap: 50,
   },
 
@@ -137,25 +131,25 @@ const styles = StyleSheet.create({
     borderRadius: 40,
     padding: 15,
     fontSize: 15,
-    color: "white",
+    color: 'white',
   },
 
   buttonContainer: {
     aspectRatio: 1,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 
   row: {
-    flexDirection: "row",
-    alignContent: "center",
-    justifyContent: "center",
+    flexDirection: 'row',
+    alignContent: 'center',
+    justifyContent: 'center',
     gap: 20,
-    backgroundColor: "inherit",
+    backgroundColor: 'inherit',
   },
 
   boldText: {
-    fontWeight: "bold",
+    fontWeight: 'bold',
     fontSize: 20,
     color: Colors.light.tint,
   },

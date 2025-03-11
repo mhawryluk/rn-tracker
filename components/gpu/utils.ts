@@ -6,31 +6,31 @@ import {
   useMemo,
   useRef,
   useState,
-} from "react";
-import { PixelRatio } from "react-native";
-import { RNCanvasContext, useCanvasEffect } from "react-native-wgpu";
-import type { Infer, AnyData } from "typegpu/data";
+} from 'react';
+import { PixelRatio } from 'react-native';
+import { type RNCanvasContext, useCanvasEffect } from 'react-native-wgpu';
+import type { AnyData, Infer } from 'typegpu/data';
 
-import { RootContext } from "../context/RootContext";
-import type { TgpuBuffer, TgpuRoot } from "typegpu";
+import type { TgpuBuffer, TgpuRoot } from 'typegpu';
+import { RootContext } from '../context/RootContext';
 
 export function useRoot(): TgpuRoot {
   const root = useContext(RootContext);
 
   if (root === null) {
-    throw new Error("please provide root");
+    throw new Error('please provide root');
   }
   return root;
 }
 
 export function useGPUSetup(
-  presentationFormat: GPUTextureFormat = navigator.gpu.getPreferredCanvasFormat()
+  presentationFormat: GPUTextureFormat = navigator.gpu.getPreferredCanvasFormat(),
 ) {
   const root = useRoot();
   const [context, setContext] = useState<RNCanvasContext | null>(null);
 
   const ref = useCanvasEffect(() => {
-    const ctx = ref.current?.getContext("webgpu");
+    const ctx = ref.current?.getContext('webgpu');
 
     if (!ctx) {
       setContext(null);
@@ -44,7 +44,7 @@ export function useGPUSetup(
     ctx.configure({
       device: root.device,
       format: presentationFormat,
-      alphaMode: "premultiplied",
+      alphaMode: 'premultiplied',
     });
 
     setContext(ctx);
@@ -55,32 +55,27 @@ export function useGPUSetup(
 
 export function useBuffer<T extends AnyData>(
   schema: T,
-  value: Infer<T> | undefined,
-  usage: ("uniform" | "storage" | "vertex")[],
-  label?: string
-) {
+  value?: Infer<T> | undefined,
+  label?: string,
+): TgpuBuffer<T> {
   const root = useRoot();
   const bufferRef = useRef<TgpuBuffer<T> | null>();
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <don't recreate buffer on value change>]
   const buffer = useMemo(() => {
     if (bufferRef.current) {
-      console.log("destroy buffer on new created");
       bufferRef.current.destroy();
     }
-    const buffer = root
-      .createBuffer(schema, value)
-      //@ts-ignore
-      .$usage(...usage)
-      .$name(label);
+    const buffer = root.createBuffer(schema, value).$name(label);
     bufferRef.current = buffer;
     return buffer;
-  }, [root, schema, label, ...usage]);
+  }, [root, schema, label]);
 
   useLayoutEffect(() => {
     if (value !== undefined && buffer && !buffer.destroyed) {
       buffer.write(value);
     }
-  }, [value]);
+  }, [value, buffer]);
 
   const cleanupRef = useRef<ReturnType<typeof setTimeout> | null>();
 
@@ -91,17 +86,17 @@ export function useBuffer<T extends AnyData>(
 
     return () => {
       cleanupRef.current = setTimeout(() => {
-        console.log("destroy buffer on unmount");
         buffer.destroy();
       }, 1000);
     };
-  }, []);
+  }, [buffer]);
 
   return buffer;
 }
 
+// biome-ignore lint/suspicious/noExplicitAny: <anyy>
 function useEvent<TFunction extends (...params: any[]) => any>(
-  handler: TFunction
+  handler: TFunction,
 ) {
   const handlerRef = useRef(handler);
 
@@ -117,7 +112,7 @@ function useEvent<TFunction extends (...params: any[]) => any>(
 
 export function useFrame(
   loop: (deltaTime: number) => unknown,
-  isRunning = true
+  isRunning = true,
 ) {
   const loopEvent = useEvent(loop);
   useEffect(() => {
@@ -138,7 +133,8 @@ export function useFrame(
     let frame = requestAnimationFrame(runner);
 
     return () => {
-      console.log("disposing animation"), cancelAnimationFrame(frame);
+      console.log('disposing animation');
+      cancelAnimationFrame(frame);
     };
   }, [loopEvent, isRunning]);
 }

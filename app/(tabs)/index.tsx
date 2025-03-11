@@ -1,5 +1,5 @@
-import { FontAwesome } from "@expo/vector-icons";
-import { useContext } from "react";
+import { FontAwesome } from '@expo/vector-icons';
+import { useContext } from 'react';
 import {
   Dimensions,
   Pressable,
@@ -7,20 +7,20 @@ import {
   StyleSheet,
   Text,
   useColorScheme,
-} from "react-native";
+} from 'react-native';
 
-import { GoalContext } from "@/components/context/GoalContext";
-import { TrackerContext } from "@/components/context/TrackerContext";
-import BoxesViz from "@/components/gpu-viz/BoxesViz";
-import TilesViz from "@/components/gpu-viz/TilesViz";
-import { useBuffer, useRoot } from "@/components/gpu/utils";
-import { View } from "@/components/Themed";
-import { u32 } from "typegpu/data";
-import Colors from "../../constants/Colors";
+import { View } from '@/components/Themed';
+import { GoalContext } from '@/components/context/GoalContext';
+import { TrackerContext } from '@/components/context/TrackerContext';
+import BoxesViz from '@/components/gpu-viz/BoxesViz';
+import TilesViz from '@/components/gpu-viz/TilesViz';
+import { useBuffer } from '@/components/gpu/utils';
+import { u32 } from 'typegpu/data';
+import Colors from '../../constants/Colors';
 
 function TrackerVizPanel() {
   const [goalState] = useContext(GoalContext);
-  const goalBuffer = useBuffer(u32, goalState, ["uniform"], "goal");
+  const goalBuffer = useBuffer(u32, goalState, 'goal').$usage('uniform');
 
   return (
     <View style={styles.vizPanel}>
@@ -62,11 +62,11 @@ function TrackerInputPanel() {
         <FontAwesome
           name="book"
           size={50}
-          color={Colors[colorScheme ?? "light"].button}
+          color={Colors[colorScheme ?? 'light'].button}
           style={{
-            verticalAlign: "middle",
-            textAlign: "center",
-            alignItems: "center",
+            verticalAlign: 'middle',
+            textAlign: 'center',
+            alignItems: 'center',
           }}
         />
 
@@ -119,7 +119,7 @@ export default function TrackerScreen() {
   return (
     <View style={styles.container}>
       <TrackerVizPanel />
-      <View style={{ width: "100%", alignItems: "center", gap: 40 }}>
+      <View style={{ width: '100%', alignItems: 'center', gap: 40 }}>
         <Text style={styles.boldText}>
           Count: {trackerState[trackerState.length - 1]}/{goalState}
         </Text>
@@ -132,8 +132,8 @@ export default function TrackerScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: "center",
-    justifyContent: "flex-end",
+    alignItems: 'center',
+    justifyContent: 'flex-end',
     padding: 20,
     paddingTop: 0,
     gap: 30,
@@ -141,11 +141,11 @@ const styles = StyleSheet.create({
 
   input: {
     padding: 30,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
     backgroundColor: Colors.light.lightTint,
     borderRadius: 20,
-    width: "100%",
+    width: '100%',
   },
 
   vizPanel: {
@@ -154,15 +154,15 @@ const styles = StyleSheet.create({
 
   vizContainer: {
     paddingVertical: 40,
-    justifyContent: "space-between",
+    justifyContent: 'space-between',
   },
 
   viz: {
-    width: Dimensions.get("window").width - 40,
+    width: Dimensions.get('window').width - 40,
     aspectRatio: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    overflow: "hidden",
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
   },
 
   button: {
@@ -170,25 +170,25 @@ const styles = StyleSheet.create({
     borderRadius: 40,
     padding: 15,
     fontSize: 15,
-    color: "white",
+    color: 'white',
   },
 
   buttonContainer: {
     aspectRatio: 1,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 
   row: {
-    flexDirection: "row",
-    alignContent: "center",
-    justifyContent: "center",
+    flexDirection: 'row',
+    alignContent: 'center',
+    justifyContent: 'center',
     gap: 20,
-    backgroundColor: "inherit",
+    backgroundColor: 'inherit',
   },
 
   boldText: {
-    fontWeight: "bold",
+    fontWeight: 'bold',
     fontSize: 20,
     color: Colors.light.tint,
   },

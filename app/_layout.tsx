@@ -2,28 +2,28 @@ import {
   DarkTheme,
   DefaultTheme,
   ThemeProvider,
-} from "@react-navigation/native";
-import { Stack } from "expo-router";
-import React, { useMemo, useState } from "react";
-import "react-native-reanimated";
+} from '@react-navigation/native';
+import { Stack } from 'expo-router';
+import { useMemo, useState } from 'react';
+import 'react-native-reanimated';
 
-import { GoalContext } from "@/components/context/GoalContext";
-import { RootContext } from "@/components/context/RootContext";
-import { TrackerContext } from "@/components/context/TrackerContext";
-import { useColorScheme } from "@/components/useColorScheme";
-import Colors from "@/constants/Colors";
-import { useDevice } from "react-native-wgpu";
-import tgpu from "typegpu";
-import ConfettiViz from "@/components/gpu-viz/ConfettiViz";
+import { GoalContext } from '@/components/context/GoalContext';
+import { RootContext } from '@/components/context/RootContext';
+import { TrackerContext } from '@/components/context/TrackerContext';
+import ConfettiViz from '@/components/gpu-viz/ConfettiViz';
+import { useColorScheme } from '@/components/useColorScheme';
+import Colors from '@/constants/Colors';
+import { useDevice } from 'react-native-wgpu';
+import tgpu from 'typegpu';
 
 export {
   // Catch any errors thrown by the Layout component.
   ErrorBoundary,
-} from "expo-router";
+} from 'expo-router';
 
 export const unstable_settings = {
   // Ensure that reloading on `/modal` keeps a back button present.
-  initialRouteName: "(tabs)",
+  initialRouteName: '(tabs)',
 };
 
 export default function RootLayout() {
@@ -32,14 +32,14 @@ export default function RootLayout() {
   const [trackerState, setTrackerState] = useState(
     Array(today.getDate())
       .fill(0)
-      .map(() => Math.round(Math.random() * 10))
+      .map(() => Math.round(Math.random() * 10)),
   );
   const [goalState, setGoalState] = useState<number>(10);
 
   const { device } = useDevice();
   const root = useMemo(
     () => (device ? tgpu.initFromDevice({ device }) : null),
-    [device]
+    [device],
   );
 
   if (root === null) {
@@ -47,21 +47,21 @@ export default function RootLayout() {
   }
 
   return (
-    <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <TrackerContext.Provider value={[trackerState, setTrackerState]}>
         <GoalContext.Provider value={[goalState, setGoalState]}>
           <RootContext.Provider value={root}>
             <Stack
               screenOptions={{
                 headerStyle: {
-                  backgroundColor: Colors[colorScheme ?? "light"].background,
+                  backgroundColor: Colors[colorScheme ?? 'light'].background,
                 },
               }}
             >
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
               <Stack.Screen
                 name="settings"
-                options={{ presentation: "modal", title: "Settings" }}
+                options={{ presentation: 'modal', title: 'Settings' }}
               />
             </Stack>
             {trackerState[trackerState.length - 1] >= goalState ? (

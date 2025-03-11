@@ -1,4 +1,4 @@
-import { createContext, Dispatch, SetStateAction } from "react";
+import { type Dispatch, type SetStateAction, createContext } from 'react';
 
 export const GoalContext = createContext<
   [number, Dispatch<SetStateAction<number>>]
